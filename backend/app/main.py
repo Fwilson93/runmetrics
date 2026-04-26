@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.session import engine, Base
-from app.db import models as _models  # noqa: F401 (register tables)
+from app.db import models as _models  # noqa: F401
 
 from app.api.health import router as health_router
 from app.api.ping import router as ping_router
@@ -11,11 +11,10 @@ from app.api.ingest import router as ingest_router
 from app.api.streams import router as streams_router
 from app.api.metrics import router as metrics_router
 from app.api.public_api import router as public_api_router
+from app.api.pmc import router as pmc_router
 
 app = FastAPI(title="RunMetrics", version="0.1.0")
 
-# Allow dashboard JS (GitHub Pages) to call this API.
-# For a personal project, '*' is acceptable; we can tighten later.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -33,3 +32,4 @@ app.include_router(ingest_router)
 app.include_router(streams_router)
 app.include_router(metrics_router)
 app.include_router(public_api_router)
+app.include_router(pmc_router)

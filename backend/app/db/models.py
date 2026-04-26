@@ -1,22 +1,19 @@
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Integer, String, BigInteger, Float, Boolean, DateTime
+from sqlalchemy import Integer, String, BigInteger, Float, Boolean, DateTime, Date
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app.db.session import Base
 
 class StravaToken(Base):
     __tablename__ = "strava_tokens"
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     athlete_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
-
     access_token: Mapped[str] = mapped_column(String, nullable=False)
     refresh_token: Mapped[str] = mapped_column(String, nullable=False)
     expires_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
 class Activity(Base):
     __tablename__ = "activities"
-
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)  # Strava activity id
     athlete_id: Mapped[int] = mapped_column(BigInteger, index=True)
 
@@ -39,30 +36,18 @@ class Activity(Base):
     has_heartrate: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     private: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
-
     raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 class ActivityStream(Base):
-    """
-    Stores Strava activity streams as a single JSONB blob per activity (key_by_type=true).
-    This is deliberate: fast, simple, re-computable, and avoids enormous row counts.
-    """
     __tablename__ = "activity_streams"
-
     activity_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     athlete_id: Mapped[int] = mapped_column(BigInteger, index=True)
-
     fetched_at: Mapped[object | None] = mapped_column(DateTime(timezone=True), nullable=True)
-
-    # Which stream keys we requested/received (e.g. ["time","distance","altitude","heartrate",...])
     keys: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-
-    # Raw response from Strava streams endpoint (dict of arrays when key_by_type=true)
     raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 class ActivityMetric(Base):
     __tablename__ = "activity_metrics"
-
     activity_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     athlete_id: Mapped[int] = mapped_column(BigInteger, index=True)
 
@@ -72,5 +57,21 @@ class ActivityMetric(Base):
     avg_pace_s_per_km: Mapped[float | None] = mapped_column(Float, nullable=True)
     avg_heartrate: Mapped[float | None] = mapped_column(Float, nullable=True)
     elevation_rate_m_per_h: Mapped[float | None] = mapped_column(Float, nullable=True)
-
     efficiency_factor: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+class DailyPMC(Base):
+    """
+    TrainingPeaks-style Performance Management Chart daily values.
+    trimp is the daily load input; ctl/atl are EWMAs (42d/7d), tsb = ctl - atl. 【1-3cfbf7】【3-dc96f1】
+    """
+    __tablename__ = "daily_pmc"
+    day: Mapped[object] = mapped_column(Date, primary_key=True)
+    athlete_id: Mapped[int] = mapped_column(BigInteger, index=True)
+
+    trimp: Mapped[float | None] = mapped_column(Float, nullable=True)  # daily training load input
+    ctl: Mapped[float | None] = mapped_column(Float, nullable=True)    # 42-day EWMA (fitness) 【1-3cfbf7】【3-dc96f1】
+    atl: Mapped[float | None] = mapped_column(Float, nullable=True)    # 7-day EWMA (fatigue) 【2-9f46da】【3-dc96f1】
+    tsb: Mapped[float | None] = mapped_column(Float, nullable=True)    # ctl - atl (form) 【2-9f46da】【1-3cfbf7】
+
+    computed_at: Mapped[object | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    params: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
