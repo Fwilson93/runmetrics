@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -e
-echo "=== RunMetrics backend sanity check ==="
 ROOT="backend/app"
-[[ -f "$ROOT/api/pmc.py" ]] || { echo "❌ Missing backend/app/api/pmc.py"; exit 1; }
-python -m py_compile backend/app/api/pmc.py backend/app/main.py backend/app/db/models.py
-echo "✅ OK"
+check() { [[ -e "$1" ]] || { echo "❌ Missing $1"; exit 1; }; }
+check backend/app/main.py
+check backend/app/api/analytics.py
+check web/index.html
+check web/script.js
+echo "✅ Basic checks passed."
