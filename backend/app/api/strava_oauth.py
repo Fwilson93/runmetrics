@@ -4,7 +4,7 @@ import os
 import requests
 
 from app.db.session import SessionLocal
-from app.db.models import StravaToken
+from app.db.session import StravaToken
 
 router = APIRouter()
 
