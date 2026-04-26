@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from app.db.session import engine
-from app.db.models import Base
+from .db.session import engine
+from .db.models import Base
 
 from app.api.health import router as health_router
 from app.api.ping import router as ping_router

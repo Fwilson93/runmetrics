@@ -3,8 +3,8 @@ from fastapi.responses import RedirectResponse
 import os
 import requests
 
-from app.db.session import SessionLocal
-from app.db.models import StravaToken
+from ..db.session import SessionLocal
+from ..db.models import StravaToken
 
 router = APIRouter()
 
