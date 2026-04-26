@@ -30,6 +30,7 @@ check_file "$ROOT/api/health.py"
 check_file "$ROOT/api/ping.py"
 check_file "$ROOT/api/strava_oauth.py"
 check_file "$ROOT/api/ingest.py"
+check_file "$ROOT/api/streams.py"
 check_file "$ROOT/db/session.py"
 check_file "$ROOT/db/models.py"
 echo
@@ -40,6 +41,7 @@ check_nonempty "$ROOT/api/health.py"
 check_nonempty "$ROOT/api/ping.py"
 check_nonempty "$ROOT/api/strava_oauth.py"
 check_nonempty "$ROOT/api/ingest.py"
+check_nonempty "$ROOT/api/streams.py"
 check_nonempty "$ROOT/db/session.py"
 check_nonempty "$ROOT/db/models.py"
 echo
@@ -56,6 +58,10 @@ grep -q "from app.db.models import StravaToken" "$ROOT/api/strava_oauth.py" \
 grep -q "from app.db.models import StravaToken, Activity" "$ROOT/api/ingest.py" \
   && ok "ingest.py imports StravaToken, Activity" \
   || fail "Missing import: StravaToken, Activity in ingest.py"
+
+grep -q "from app.db.models import StravaToken, Activity, ActivityStream" "$ROOT/api/streams.py" \
+  && ok "streams.py imports StravaToken, Activity, ActivityStream" \
+  || fail "Missing import: StravaToken, Activity, ActivityStream in streams.py"
 
 grep -q "Base.metadata.create_all" "$ROOT/main.py" \
   && ok "DB tables initialised in main.py" \

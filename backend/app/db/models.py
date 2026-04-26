@@ -41,3 +41,21 @@ class Activity(Base):
     private: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+class ActivityStream(Base):
+    """
+    Stores Strava activity streams as a single JSONB blob per activity (key_by_type=true).
+    This is deliberate: fast, simple, re-computable, and avoids enormous row counts.
+    """
+    __tablename__ = "activity_streams"
+
+    activity_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    athlete_id: Mapped[int] = mapped_column(BigInteger, index=True)
+
+    fetched_at: Mapped[object | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Which stream keys we requested/received (e.g. ["time","distance","altitude","heartrate",...])
+    keys: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+
+    # Raw response from Strava streams endpoint (dict of arrays when key_by_type=true)
+    raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
