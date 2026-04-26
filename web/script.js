@@ -5,9 +5,18 @@ function fmtDate(iso) {
   const d = new Date(iso);
   return d.toISOString().slice(0,10);
 }
+
 function fmt(x, dp=1) {
   if (x === null || x === undefined) return "";
   return Number(x).toFixed(dp);
+}
+
+function paceMmSs(minPerKm) {
+  if (minPerKm === null || minPerKm === undefined) return "";
+  const totalSec = Math.round(minPerKm * 60);
+  const mm = Math.floor(totalSec / 60);
+  const ss = totalSec % 60;
+  return `${mm}:${ss.toString().padStart(2, "0")}`;
 }
 
 async function fetchJSON(url) {
@@ -58,7 +67,7 @@ async function renderLoad() {
   }, {responsive: true});
 
   document.getElementById("load_meta").textContent =
-    `HRmax observed=${fmt(data.hrmax_observed,0)} bpm; HR-missing sessions in window=${data.hr_missing_sessions_in_window}; tau_ctl=${data.tau_ctl}, tau_atl=${data.tau_atl}.`;
+    `HRmax observed=${fmt(data.hrmax_observed,0)} bpm; HR-missing sessions in window=${data.hr_missing_sessions_in_window}.`;
 }
 
 async function renderRecent() {
@@ -72,7 +81,7 @@ async function renderRecent() {
       <td>${it.name || ""}</td>
       <td>${it.sport_type || ""}</td>
       <td class="num">${it.distance_km ? fmt(it.distance_km,1) : ""}</td>
-      <td class="num">${it.pace_min_per_km ? fmt(it.pace_min_per_km,2) : ""}</td>
+      <td class="num">${paceMmSs(it.pace_min_per_km)}</td>
       <td class="num">${it.avg_hr ? fmt(it.avg_hr,0) : ""}</td>
       <td class="num">${it.ef ? fmt(it.ef,0) : ""}</td>
     `;
@@ -81,12 +90,7 @@ async function renderRecent() {
 }
 
 (async function main() {
-  try {
-    await renderWeekly();
-    await renderLoad();
-    await renderRecent();
-  } catch (e) {
-    console.error(e);
-    alert("Dashboard failed to load data from API. Check that RunMetrics backend is Live and CORS is enabled.");
-  }
+  await renderWeekly();
+  await renderLoad();
+  await renderRecent();
 })();
