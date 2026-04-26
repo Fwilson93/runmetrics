@@ -11,6 +11,8 @@ from app.api.ingest import router as ingest_router
 from app.api.streams import router as streams_router
 from app.api.metrics import router as metrics_router
 from app.api.analytics import router as analytics_router
+from app.api.physiology import router as phys_router
+app.include_router(phys_router)
 
 app = FastAPI(title="RunMetrics", version="0.1.0")
 
@@ -31,3 +33,5 @@ app.include_router(ingest_router)
 app.include_router(streams_router)
 app.include_router(metrics_router)
 app.include_router(analytics_router)
+from app.api.physiology import router as phys_router
+app.include_router(phys_router)
