@@ -18,3 +18,5 @@ app.include_router(ping_router)
 app.include_router(strava_oauth_router)
 app.include_router(ingest_router)
 app.include_router(streams_router)
+from app.api.metrics import router as metrics_router
+app.include_router(metrics_router)

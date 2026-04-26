@@ -59,3 +59,18 @@ class ActivityStream(Base):
 
     # Raw response from Strava streams endpoint (dict of arrays when key_by_type=true)
     raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+class ActivityMetric(Base):
+    __tablename__ = "activity_metrics"
+
+    activity_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    athlete_id: Mapped[int] = mapped_column(BigInteger, index=True)
+
+    distance_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+    moving_time_s: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    avg_pace_s_per_km: Mapped[float | None] = mapped_column(Float, nullable=True)
+    avg_heartrate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    elevation_rate_m_per_h: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    efficiency_factor: Mapped[float | None] = mapped_column(Float, nullable=True)
