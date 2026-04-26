@@ -5,7 +5,4 @@ router = APIRouter()
 
 @router.get("/ping")
 def ping():
-    return {
-        "pong": True,
-        "time_utc": datetime.now(timezone.utc).isoformat()
-    }
+    return {"pong": True, "time_utc": datetime.now(timezone.utc).isoformat()}
