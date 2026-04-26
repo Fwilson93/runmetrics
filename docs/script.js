@@ -1,57 +1,118 @@
 const API = "https://runmetrics.onrender.com";
 
-/**
- * Helpers
- */
-const paceMinPerKm = (s) =>
-  s ? (s / 60).toFixed(2) : "";
+const statusEl = document.getElementById("status");
+const btn = document.getElementById("recompute");
+const tbody = document.querySelector("#activities tbody");
+
+function setStatus(msg) { statusEl.textContent = msg; }
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toISOString().slice(0,10);
+}
+
+function fmtNum(x, digits=2) {
+  if (x === null || x === undefined) return "";
+  return Number(x).toFixed(digits);
+}
+
+async function recomputeMetrics() {
+  setStatus("Recomputing metrics…");
+  const r = await fetch(`${API}/metrics/derive`);
+  const j = await r.json();
+  setStatus(`Metrics: ${j.activities} activities (inserted ${j.inserted}, updated ${j.updated})`);
+}
 
 async function loadActivities() {
-  const res = await fetch(`${API}/metrics/derive`);
-  if (!res.ok) {
-    console.warn("Metrics derive endpoint not reachable");
+  setStatus("Loading activities…");
+  const r = await fetch(`${API}/api/activities?limit=60`);
+  const j = await r.json();
+  if (!r.ok || j.status !== "ok") {
+    setStatus("Failed to load activities");
+    console.warn(j);
+    return [];
   }
-
-  const activitiesRes = await fetch(`${API}/strava/ingest?after=2026-01-01`);
-  await activitiesRes.json(); // ensure backend awake
-
-  const dbRes = await fetch(`${API}/health`);
-  if (!dbRes.ok) return;
-
-  // ⚠️ Hacky but fine: no public list endpoint yet
-  // We'll add one later
+  setStatus(`Loaded ${j.count} activities`);
+  return j.activities;
 }
 
-async function loadMetrics() {
-  const res = await fetch(`${API}/metrics/derive`);
-  if (!res.ok) return;
-
-  const data = await res.json();
-  console.log("Metrics recomputed:", data);
-
-  // Pull activity metrics directly from DB via temporary shortcut:
-  const rowsRes = await fetch(`${API}/strava/ingest?after=2026-01-01`);
-  await rowsRes.json();
+async function loadEFSeries() {
+  const r = await fetch(`${API}/api/metrics?limit=300`);
+  const j = await r.json();
+  if (!r.ok || j.status !== "ok") {
+    console.warn(j);
+    return [];
+  }
+  return j.metrics;
 }
 
-async function fetchSummary() {
-  const res = await fetch(`${API}/metrics/derive`);
-  await res.json();
+function renderTable(activities) {
+  tbody.innerHTML = "";
+  for (const a of activities) {
+    const tr = document.createElement("tr");
 
-  const raw = await fetch(`${API}/streams?fake=1`).catch(() => null);
+    const tds = [
+      { text: fmtDate(a.start_date) },
+      { text: a.name || "" },
+      { text: fmtNum(a.distance_km, 2), cls: "num" },
+      { text: a.avg_pace_min_per_km ? fmtNum(a.avg_pace_min_per_km, 2) : "", cls: "num" },
+      { text: a.avg_heartrate ? fmtNum(a.avg_heartrate, 0) : "", cls: "num" },
+      { text: a.efficiency_factor ? fmtNum(a.efficiency_factor, 2) : "", cls: "num" },
+    ];
+
+    for (const c of tds) {
+      const td = document.createElement("td");
+      td.textContent = c.text;
+      if (c.cls) td.className = c.cls;
+      tr.appendChild(td);
+    }
+
+    tbody.appendChild(tr);
+  }
 }
 
-async function renderEF() {
-  // Temporary: use derived metrics table via dedicated query later
-  // For now, this is a placeholder visual reward
+function renderEFPlot(metrics) {
+  // sort oldest -> newest for nicer plots
+  const m = metrics.slice().filter(x => x.efficiency_factor !== null && x.start_date).sort((a,b)=>new Date(a.start_date)-new Date(b.start_date));
+
+  const x = m.map(d => d.start_date);
+  const y = m.map(d => d.efficiency_factor);
+  const text = m.map(d => `EF=${fmtNum(d.efficiency_factor,2)}<br>Pace=${d.avg_pace_min_per_km ? fmtNum(d.avg_pace_min_per_km,2) : "?"} min/km<br>HR=${d.avg_heartrate ? fmtNum(d.avg_heartrate,0) : "?"}`);
+
   Plotly.newPlot("ef_plot", [{
-    y: [],
-    mode: "markers",
-    type: "scatter"
+    x, y,
+    mode: "markers+lines",
+    type: "scatter",
+    text,
+    hoverinfo: "text+x",
+    marker: { size: 7, color: "#0b62ff" },
+    line: { width: 2, color: "#0b62ff" }
   }], {
-    xaxis: { title: "Activity" },
-    yaxis: { title: "Efficiency Factor" },
-  });
+    margin: { l: 50, r: 20, t: 10, b: 40 },
+    xaxis: { title: "Date" },
+    yaxis: { title: "Efficiency Factor (m per bpm)", zeroline: false },
+  }, {displayModeBar: false});
 }
 
-renderEF();
+async function main() {
+  // recompute once per page load (cheap for your dataset)
+  await recomputeMetrics();
+  const activities = await loadActivities();
+  renderTable(activities);
+  const series = await loadEFSeries();
+  renderEFPlot(series);
+}
+
+btn.addEventListener("click", async () => {
+  await recomputeMetrics();
+  const activities = await loadActivities();
+  renderTable(activities);
+  const series = await loadEFSeries();
+  renderEFPlot(series);
+});
+
+main().catch(err => {
+  console.error(err);
+  setStatus("Error (see console)");
+});
