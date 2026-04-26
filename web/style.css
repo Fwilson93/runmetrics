@@ -1,0 +1,36 @@
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 40px;
+  max-width: 1000px;
+}
+
+h1 {
+  font-size: 2.2rem;
+  margin-bottom: 0;
+}
+
+.subtitle {
+  color: #555;
+  margin-top: 4px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 12px;
+}
+
+th, td {
+  border-bottom: 1px solid #ddd;
+  padding: 6px 8px;
+  text-align: right;
+}
+
+th:first-child, td:first-child,
+th:nth-child(2), td:nth-child(2) {
+  text-align: left;
+}
+
+section {
+  margin-top: 40px;
+}
