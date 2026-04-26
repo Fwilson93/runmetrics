@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 
-from app.db.session import engine
-from app.db.models import Base
-
+from app.db.session import engine, Base
 from app.api.health import router as health_router
 from app.api.ping import router as ping_router
 from app.api.strava_oauth import router as strava_oauth_router
@@ -12,7 +10,6 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# ✅ THIS is the missing line
 Base.metadata.create_all(bind=engine)
 
 app.include_router(health_router)
