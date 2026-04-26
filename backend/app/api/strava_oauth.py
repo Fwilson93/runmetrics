@@ -65,7 +65,6 @@ def strava_callback(request: Request):
                 expires_at=data["expires_at"],
             )
             db.add(token)
-
         db.commit()
     finally:
         db.close()

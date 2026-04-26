@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Integer, String, BigInteger
+from sqlalchemy import Integer, String, BigInteger, Float, Boolean, DateTime
+from sqlalchemy.dialects.postgresql import JSONB
 
 from app.db.session import Base
 
@@ -12,3 +13,31 @@ class StravaToken(Base):
     access_token: Mapped[str] = mapped_column(String, nullable=False)
     refresh_token: Mapped[str] = mapped_column(String, nullable=False)
     expires_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+
+class Activity(Base):
+    __tablename__ = "activities"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)  # Strava activity id
+    athlete_id: Mapped[int] = mapped_column(BigInteger, index=True)
+
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
+    type: Mapped[str | None] = mapped_column(String, nullable=True)
+    sport_type: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    start_date: Mapped[object | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    distance_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+    moving_time_s: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    elapsed_time_s: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_elevation_gain_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    average_speed_mps: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_speed_mps: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    average_heartrate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_heartrate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    has_heartrate: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+
+    private: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+
+    raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
