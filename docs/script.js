@@ -140,3 +140,58 @@ async function scenarios(){
     yaxis:{ title:"Form (TSB)" }
   }, {responsive:true});
 }
+
+// --------- weekly zone status summary ----------
+function zoneStatus(zones){
+  const z = zones;
+  const frac = k => z[k] ? z[k].fraction : 0;
+
+  const aero = Math.max(frac("Z1"), frac("Z2"));
+  const tempo = frac("Z3");
+  const hard = Math.max(frac("Z4"), frac("Z5"));
+
+  const level = f =>
+    f > 1.1 ? "high ⚠️" :
+    f >= 0.7 ? "on target ✅" :
+    "low ⏸️";
+
+  return `
+    This week:
+    • Aerobic base (Z1–Z2): ${level(aero)}
+    • Tempo stress (Z3): ${level(tempo)}
+    • High intensity (Z4–Z5): ${level(hard)}
+  `;
+}
+
+// plug into existing zoneEffort render
+const _zoneEffort = zoneEffort;
+zoneEffort = async function(){
+  const d = await j(`${API}/api/zone_effort?weeks=1`);
+  if(d.status !== "ok") return;
+
+  const zones = Object.keys(d.zones);
+  const mins = zones.map(z => d.zones[z].minutes);
+  const frac = zones.map(z => Math.round(100*d.zones[z].fraction));
+
+  Plotly.newPlot("zone_effort", [{
+    x: mins,
+    y: zones,
+    orientation: "h",
+    type: "bar",
+    text: frac.map(f=>`${f}%`),
+    textposition: "outside",
+    marker:{color:["#4da3ff","#3ddc97","#ffcc66","#ff6b6b","#ff4dff"]}
+  }], {margin:{l:40,r:20,t:10,b:30}});
+
+  document.getElementById("zone_effort_meta").innerText =
+    zones.map(z=>`${z}: ${d.zones[z].minutes} min`).join(" · ");
+
+  // NEW: add coaching-style summary just below
+  const summary = zoneStatus(d.zones);
+  const p = document.createElement("pre");
+  p.style.marginTop = "6px";
+  p.style.color = "#9aa3c7";
+  p.style.fontSize = "0.95rem";
+  p.textContent = summary;
+  document.getElementById("zone_effort_meta").appendChild(p);
+};
