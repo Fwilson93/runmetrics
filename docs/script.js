@@ -105,7 +105,10 @@ async function renderMain(){
   const lastTsb = tsbPast[tsbPast.length - 1];
 
   // Custom depends on sliders
-  const scenCustom = await fetchJSON(`${API}/api/scenarios_dynamic?days=7&dur_min=${dur}&intensity=${intensity}`);
+  
+  const safeDur = Math.max(dur, 5);
+  const safeIntensity = Math.max(intensity, 0.4);
+  const scenCustom = await fetchJSON(`${API}/api/scenarios_dynamic?days=7&dur_min=${safeDur}&intensity=${safeIntensity}`);
   const custom = (scenCustom.scenarios || []).find(s => s.name === "Custom") || scenCustom.scenarios[0];
   const rest = (scenCustom.scenarios || []).find(s => s.name === "Rest") || scenCustom.scenarios[0];
 
@@ -184,7 +187,10 @@ function attachControls(){
 document.addEventListener("DOMContentLoaded", async () => {
   try{
     
+    
     await loadRecommendation();
+    initialiseSlidersSafely();
+    
     setCustomDefaultsFromRecommendation(RECOMMENDED);
     
     attachControls();
@@ -283,6 +289,20 @@ function setCustomDefaultsFromRecommendation(rec){
   } else {
     durEl.value = rec.dur_min;
     intEl.value = newInt.toFixed(2);
+  }
+
+  document.getElementById("dur_lbl").textContent = durEl.value;
+}
+
+function initialiseSlidersSafely(){
+  const durEl = document.getElementById("dur");
+  const intEl = document.getElementById("intensity_mode");
+
+  if(Number(durEl.value) < 5){
+    durEl.value = 45;
+  }
+  if(Number(intEl.value) < 0.4){
+    intEl.value = 0.65;
   }
 
   document.getElementById("dur_lbl").textContent = durEl.value;
