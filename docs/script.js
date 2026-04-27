@@ -10,7 +10,7 @@ async function fetchJSON(url){
   if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
   return r.json();
 }
-
+const C = { ctl:"#6aa9ff", atl:"#ff6b6b", tsb:"#3ddc97" };
 const DARK = {
   paper_bgcolor:"#0f1117",
   plot_bgcolor:"#0f1117",
@@ -21,10 +21,7 @@ const DARK = {
   margin:{t:20,r:10,l:60,b:45},
 };
 
-const C = { ctl:"#6aa9ff", atl:"#ff6b6b", tsb:"#3ddc97" };
-
 function nextDatesFrom(lastIsoDate, n){
-  // lastIsoDate: YYYY-MM-DD
   const base = new Date(lastIsoDate + "T00:00:00Z");
   const out = [];
   for(let i=1;i<=n;i++){
@@ -33,20 +30,17 @@ function nextDatesFrom(lastIsoDate, n){
   }
   return out;
 }
-
 function recBadge(rec){
   const c = rec==="good" ? "#3ddc97" : (rec==="caution" ? "#ffcc66" : "#ff6b6b");
   const t = rec==="good" ? "✅ sensible" : (rec==="caution" ? "⚠️ caution" : "⛔ risky");
   return `<span style="display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid ${c};color:${c}">${t}</span>`;
 }
-
 function arrowFor(v){
   if(v > 1.0) return "↑";
   if(v < -1.0) return "↓";
   return "↔";
 }
 function fatigueText(v){
-  // positive delta ATL = more fatigue; negative = less fatigue
   if(v > 1.0) return "more tired";
   if(v < -1.0) return "less tired";
   return "about the same";
@@ -55,6 +49,16 @@ function freshnessText(v){
   if(v > 1.0) return "fresher";
   if(v < -1.0) return "more tired";
   return "about the same";
+}
+function intensityLabel(intensity){
+  const pct = Math.round(intensity*100);
+  // mirror UI names roughly
+  if (pct <= 52) return "Easy jog";
+  if (pct <= 62) return "Easy aerobic";
+  if (pct <= 68) return "Aerobic (Z2)";
+  if (pct <= 75) return "Steady";
+  if (pct <= 83) return "Tempo";
+  return "Hard";
 }
 
 async function renderScenarioTable(scen){
@@ -86,9 +90,51 @@ async function renderScenarioTable(scen){
       </table>
     </div>
     <p class="small muted" style="margin-top:8px">
-      Fitness ≈ CTL (long-term load) · Fatigue ≈ ATL (short-term load) · Freshness ≈ TSB (CTL−ATL)
+      Fitness ≈ CTL (long-term) · Fatigue ≈ ATL (short-term) · Freshness ≈ TSB (CTL−ATL)
     </p>
   `;
+}
+
+async function renderZones(){
+  const cur = await fetchJSON(`${API}/api/zones`);
+  const old = await fetchJSON(`${API}/api/zones_history?days_ago=30`);
+  const week = await fetchJSON(`${API}/api/zone_effort?weeks=1`);
+
+  if(cur.status !== "ok"){
+    document.getElementById("zones_meta").textContent = "Not enough data yet to estimate zones reliably.";
+    return;
+  }
+
+  const hrmax = cur.hrmax;
+  const lt1 = cur.lt1_hr;
+  const lt2 = cur.lt2_hr;
+
+  let deltaTxt = "";
+  if(old.status === "ok"){
+    const d_lt1 = lt1 - old.lt1_hr;
+    const d_lt2 = lt2 - old.lt2_hr;
+    const d_max = hrmax - old.hrmax;
+    deltaTxt = `Change vs 30d ago: LT1 ${d_lt1>=0?"+":""}${d_lt1} bpm · LT2 ${d_lt2>=0?"+":""}${d_lt2} bpm · HRmax ${d_max>=0?"+":""}${d_max} bpm.`;
+  }
+
+  // Zone ranges
+  const order = ["Z1","Z2","Z3","Z4","Z5"];
+  const ranges = order.map(z => {
+    const [lo,hi]=cur.zones[z];
+    return `${z}: ${Math.round(lo)}–${Math.round(hi)} bpm`;
+  }).join(" · ");
+
+  document.getElementById("zones_meta").textContent =
+    `Current zones: HRmax≈${hrmax} · LT1≈${lt1} · LT2≈${lt2}. ${deltaTxt} ${ranges}`;
+
+  if(week.status === "ok"){
+    const parts = order.map(z => {
+      const m = week.zones[z].minutes;
+      return `${z} ${m} min`;
+    }).join(" · ");
+    document.getElementById("zones_week").textContent =
+      `This week time-in-zone: ${parts}`;
+  }
 }
 
 async function renderLoadWithProjections(){
@@ -96,7 +142,6 @@ async function renderLoadWithProjections(){
   const intensity = Number(document.getElementById("intensity_mode").value);
   document.getElementById("dur_lbl").textContent = dur;
 
-  // 1) past 90 days only
   const hist = await fetchJSON(`${API}/api/load?days=90`);
   const series = hist.series || [];
   const xPast = series.map(p => p.date);
@@ -109,7 +154,6 @@ async function renderLoadWithProjections(){
   const lastAtl = atlPast[atlPast.length - 1];
   const lastTsb = tsbPast[tsbPast.length - 1];
 
-  // 2) scenarios for next 7 days
   const scen = await fetchJSON(`${API}/api/scenarios_dynamic?days=7&dur_min=${dur}&intensity=${intensity}`);
   if(scen.status !== "ok"){
     Plotly.newPlot("load_plot", [
@@ -123,16 +167,21 @@ async function renderLoadWithProjections(){
   await renderScenarioTable(scen);
 
   const recommended = scen.scenarios[0];
-  const rest = (scen.scenarios || []).find(s => s.name === "Rest") || scen.scenarios[1];
-  const custom = (scen.scenarios || []).find(s => s.name.startsWith("Custom:")) || scen.scenarios[0];
 
-  // 3) Make projections continuous: start at last past point
+  // recommended workout details
+  let recText = "";
+  if(recommended.name === "Rest" || recommended.dur_min === 0){
+    recText = `Recommended tomorrow: Rest day (based on freshness projection).`;
+  } else {
+    recText = `Recommended tomorrow: ${Math.round(recommended.dur_min)} min at ${intensityLabel(recommended.intensity)} (~${Math.round(recommended.intensity*100)}% HRmax).`;
+  }
+  document.getElementById("rec_workout").textContent = recText;
+
+  const rest = (scen.scenarios || []).find(s => s.name === "Rest") || scen.scenarios[1];
+  const custom = (scen.scenarios || []).find(s => s.name === "Custom") || scen.scenarios[0];
+
   const xFut = nextDatesFrom(lastDate, 7);
   const xProj = [lastDate, ...xFut];
-
-  function withStart(arr, startVal){
-    return [startVal, ...arr];
-  }
 
   const styles = [
     { label:"Rest", dash:"dot", width:2, opacity:0.70, scen:rest },
@@ -146,24 +195,13 @@ async function renderLoadWithProjections(){
     {x:xPast,y:tsbPast,type:"scatter",mode:"lines",name:"Form (TSB) past",line:{color:C.tsb,width:3,dash:"dot"}},
   ];
 
+  const withStart = (arr, startVal) => [startVal, ...arr];
+
   for(const st of styles){
     const s = st.scen.series;
-
-    traces.push({
-      x:xProj, y:withStart(s.ctl, lastCtl),
-      type:"scatter", mode:"lines",
-      name:`CTL ${st.label}`, line:{color:C.ctl, dash:st.dash, width:st.width}, opacity:st.opacity
-    });
-    traces.push({
-      x:xProj, y:withStart(s.atl, lastAtl),
-      type:"scatter", mode:"lines",
-      name:`ATL ${st.label}`, line:{color:C.atl, dash:st.dash, width:st.width}, opacity:st.opacity
-    });
-    traces.push({
-      x:xProj, y:withStart(s.tsb, lastTsb),
-      type:"scatter", mode:"lines",
-      name:`TSB ${st.label}`, line:{color:C.tsb, dash:st.dash, width:st.width}, opacity:st.opacity
-    });
+    traces.push({x:xProj,y:withStart(s.ctl,lastCtl),type:"scatter",mode:"lines",name:`CTL ${st.label}`,line:{color:C.ctl,dash:st.dash,width:st.width},opacity:st.opacity});
+    traces.push({x:xProj,y:withStart(s.atl,lastAtl),type:"scatter",mode:"lines",name:`ATL ${st.label}`,line:{color:C.atl,dash:st.dash,width:st.width},opacity:st.opacity});
+    traces.push({x:xProj,y:withStart(s.tsb,lastTsb),type:"scatter",mode:"lines",name:`TSB ${st.label}`,line:{color:C.tsb,dash:st.dash,width:st.width},opacity:st.opacity});
   }
 
   Plotly.newPlot("load_plot", traces, {
@@ -187,6 +225,7 @@ function attachControls(){
 (async function main(){
   try{
     attachControls();
+    await renderZones();
     await renderLoadWithProjections();
   }catch(e){
     console.error(e);
