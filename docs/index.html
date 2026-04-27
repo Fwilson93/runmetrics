@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>RunMetrics</title>
 
-  <link rel="stylesheet" href="./style.css">
-  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  ./style.css
+  https://cdn.plot.ly/plotly-2.30.0.min.jsscript>
 </head>
 <body>
   <header class="top">
@@ -20,9 +20,9 @@
   <section class="card">
     <h2>Fitness / fatigue / form (long-term)</h2>
     <p class="explain">
-      <strong>Fitness (CTL)</strong>: long‑term training load (how fit you’re becoming).<br>
-      <strong>Fatigue (ATL)</strong>: short‑term load (how tired you are right now).<br>
-      <strong>Form (TSB)</strong> = CTL − ATL (freshness; more negative = more tired).
+      <strong>Fitness (CTL)</strong>: long‑term training load.<br>
+      <strong>Fatigue (ATL)</strong>: short‑term load.<br>
+      <strong>Form (TSB)</strong> = CTL − ATL.
     </p>
     <div id="load_plot" class="plot"></div>
     <div id="load_meta" class="small muted"></div>
@@ -30,7 +30,7 @@
 
   <section class="card">
     <h2>What if I train tomorrow?</h2>
-    <p class="explain">Adjust the sliders; compare the ranked options.</p>
+    <p class="explain">Pick duration and intensity — results update instantly.</p>
 
     <div class="controls">
       <label>
@@ -39,20 +39,29 @@
       </label>
 
       <label>
-        Intensity: <span id="int_lbl"></span>
-        <input id="intensity" type="range" min="0.45" max="0.95" step="0.01" value="0.65">
+        Intensity
+        <select id="intensity_mode">
+          <option value="0.50">Easy jog</option>
+          <option value="0.60">Easy aerobic</option>
+          <option value="0.65" selected>Aerobic (Z2)</option>
+          <option value="0.72">Steady</option>
+          <option value="0.80">Tempo</option>
+          <option value="0.88">Hard</option>
+        </select>
       </label>
     </div>
 
     <div id="scenario_table" class="small"></div>
     <div id="scenario_plot" class="plot smallplot"></div>
-    <div class="small muted">Plot: projected <strong>Form (TSB)</strong> over the next 14 days.</div>
+    <div class="small muted">
+      Plot shows projected <strong>Form (TSB)</strong> over the next 14 days.
+    </div>
   </section>
 
   <footer class="small muted">
-    ⚠️ Outstanding: migrate DB off Render free tier before 30‑day expiry.
+    ⚠️ Outstanding: migrate database off Render free tier before 30‑day expiry.
   </footer>
 
-  <script src="./script.js"></script>
+  ./script.jsscript>
 </body>
 </html>
