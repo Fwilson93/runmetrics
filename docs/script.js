@@ -6,9 +6,36 @@ function fmt(x, dp=1){
   return Number(x).toFixed(dp);
 }
 async function fetchJSON(url){
-  const r = await fetch(url);
-  if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-  return r.json();
+  // Robust fetch with timeout + one retry. Adds URL/status to errors.
+  async function _once(){
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 12000); // 12s
+    try{
+      const r = await fetch(url, { signal: controller.signal });
+      const text = await r.text();
+      if(!r.ok){
+        throw new Error(`${r.status} ${r.statusText} for ${url} :: ${text.slice(0,200)}`);
+      }
+      try{
+        return JSON.parse(text);
+      }catch(e){
+        throw new Error(`JSON parse error for ${url} :: ${text.slice(0,200)}`);
+      }
+    }finally{
+      clearTimeout(t);
+    }
+  }
+
+  try{
+    return await _once();
+  }catch(e){
+    // one retry (helps Render cold start / transient)
+    try{
+      return await _once();
+    }catch(e2){
+      throw e2;
+    }
+  }
 }
 
 const DARK = {
@@ -181,9 +208,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     
   }catch(e){
+    
     console.error(e);
-    alert("Dashboard couldn't load API data. If Render was sleeping, refresh.");
-  }
+    let b = document.getElementById("api_error_banner");
+    if(!b){
+      b = document.createElement("div");
+      b.id = "api_error_banner";
+      b.style.margin = "10px 0";
+      b.style.padding = "10px 12px";
+      b.style.borderRadius = "12px";
+      b.style.border = "1px solid rgba(255,204,102,0.35)";
+      b.style.background = "rgba(255,204,102,0.10)";
+      b.style.color = "#ffcc66";
+      b.style.fontSize = "0.95rem";
+      document.body.insertBefore(b, document.body.firstChild.nextSibling);
+    }
+    b.textContent = `API error: ${e.message}. (If Render is waking, retry once.)`;
+}
 });
 
 /* RECOMMENDATION_EXPLANATION_PANEL_V1 */
