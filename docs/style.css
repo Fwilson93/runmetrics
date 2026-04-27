@@ -1,41 +1,38 @@
-body {
-  margin: 0;
-  padding: 16px;
-  font-family: system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;
-  background: #0b0d12;
-  color: #e8ecf3;
+:root{
+  --bg:#0b0c10; --panel:#121622; --line:#20263a;
+  --fg:#e8ecf3; --muted:#9aa3c7; --accent:#6aa9ff;
 }
-
-h1 { margin: 0; font-size: 2rem; }
-.subtitle { color: #aab; margin-top: 6px; }
-
-.card {
-  background: #121622;
-  border: 1px solid #20263a;
-  border-radius: 14px;
-  padding: 14px;
-  margin: 16px 0;
+*{box-sizing:border-box}
+body{
+  margin:0; padding:14px;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;
+  background:var(--bg); color:var(--fg);
 }
-
-h2 { margin: 0 0 8px; font-size: 1.2rem; }
-.explain { color: #9aa3c7; font-size: 0.95rem; margin-bottom: 8px; }
-
-.plot.small { height: 260px; }
-
-.meta { color: #aab; font-size: 0.9rem; margin-top: 6px; }
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 480px;
+.top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:6px 0 12px}
+h1{margin:0;font-size:2rem}
+.sub{color:var(--muted);margin-top:4px}
+.small{font-size:0.92rem}
+.muted{color:var(--muted)}
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  margin:12px 0;
 }
-th, td {
-  padding: 6px 8px;
-  border-bottom: 1px solid #20263a;
-  white-space: nowrap;
+h2{margin:0 0 8px;font-size:1.2rem}
+.explain{color:var(--muted);font-size:0.95rem;margin:0 0 8px}
+.plot{width:100%;height:420px}
+.smallplot{height:320px}
+.controls{display:grid;gap:10px;margin:8px 0 10px}
+.controls label{display:grid;gap:6px}
+input[type="range"]{width:100%}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:680px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{text-align:left}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+@media(min-width:860px){
+  body{padding:24px 32px;max-width:1200px;margin:auto}
+  .controls{grid-template-columns:1fr 1fr;align-items:end}
 }
-th { text-align: left; }
-
-.tablewrap { overflow-x: auto; }
-
-footer { margin-top: 24px; color: #889; font-size: 0.9rem; }

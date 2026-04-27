@@ -9,51 +9,48 @@
   <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
 </head>
 <body>
-  <header>
-    <h1>🏃 RunMetrics</h1>
-    <p class="subtitle">Training load, form, and simple “what‑if” guidance</p>
+  <header class="top">
+    <div>
+      <h1>🏃 RunMetrics</h1>
+      <div class="sub">Simple, honest training feedback</div>
+      <div class="small muted">Backend: <span id="api_url"></span></div>
+    </div>
   </header>
 
   <section class="card">
-    <h2>Weekly effort by zone</h2>
-    <p class="explain">How much time you’ve spent in each intensity zone this week, compared to simple targets.</p>
-    <div id="zone_effort" class="plot small"></div>
-    <div id="zone_effort_meta" class="meta"></div>
-  </section>
-
-  <section class="card">
-    <h2>Fitness, fatigue & form</h2>
+    <h2>Fitness / fatigue / form (long-term)</h2>
     <p class="explain">
-      <strong>Fitness (CTL)</strong> = long‑term training load.<br>
-      <strong>Fatigue (ATL)</strong> = short‑term load.<br>
-      <strong>Form (TSB)</strong> = Fitness − Fatigue.
+      <strong>Fitness (CTL)</strong>: long‑term training load (how fit you’re becoming).<br>
+      <strong>Fatigue (ATL)</strong>: short‑term load (how tired you are right now).<br>
+      <strong>Form (TSB)</strong> = CTL − ATL (freshness; more negative = more tired).
     </p>
-    <div id="load_bar" class="plot small"></div>
+    <div id="load_plot" class="plot"></div>
+    <div id="load_meta" class="small muted"></div>
   </section>
 
   <section class="card">
     <h2>What if I train tomorrow?</h2>
-    <p class="explain">Projected effect after 14 days. Ranked from most to least sensible today.</p>
-    <div id="scenario_bar" class="plot small"></div>
-    <div id="scenario_meta" class="meta"></div>
-  </section>
+    <p class="explain">Adjust the sliders; compare the ranked options.</p>
 
-  <section class="card">
-    <h2>Recent activities</h2>
-    <div class="tablewrap">
-      <table id="recent">
-        <thead>
-          <tr>
-            <th>Date</th><th>Name</th><th>km</th><th>Pace</th><th>HR</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    <div class="controls">
+      <label>
+        Duration: <span id="dur_lbl"></span> min
+        <input id="dur" type="range" min="0" max="180" step="5" value="45">
+      </label>
+
+      <label>
+        Intensity: <span id="int_lbl"></span>
+        <input id="intensity" type="range" min="0.45" max="0.95" step="0.01" value="0.65">
+      </label>
     </div>
+
+    <div id="scenario_table" class="small"></div>
+    <div id="scenario_plot" class="plot smallplot"></div>
+    <div class="small muted">Plot: projected <strong>Form (TSB)</strong> over the next 14 days.</div>
   </section>
 
-  <footer>
-    <p class="small">⚠️ Reminder: migrate database off Render free tier before 30‑day expiry.</p>
+  <footer class="small muted">
+    ⚠️ Outstanding: migrate DB off Render free tier before 30‑day expiry.
   </footer>
 
   <script src="./script.js"></script>
