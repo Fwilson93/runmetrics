@@ -232,3 +232,128 @@ function attachControls(){
     alert("Dashboard couldn't load API data. If Render was sleeping, refresh.");
   }
 })();
+
+/* RUNMETRICS_ZONES_GRAPHICAL_V1 */
+async function renderZonesGraphical(){
+  const API = (typeof window !== "undefined" && window.API) ? window.API : "https://runmetrics.onrender.com";
+
+  async function fetchJSON(url){
+    const r = await fetch(url);
+    if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    return r.json();
+  }
+
+  // Dark plot defaults (self-contained)
+  const DARK = {
+    paper_bgcolor:"#0f1117",
+    plot_bgcolor:"#0f1117",
+    font:{color:"#e9eef6"},
+    xaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
+    yaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
+    legend:{orientation:"h"},
+    margin:{t:15,r:10,l:20,b:40},
+  };
+
+  const cur = await fetchJSON(`${API}/api/zones`);
+  const old = await fetchJSON(`${API}/api/zones_history?days_ago=30`).catch(() => ({status:"no"}));
+  const week = await fetchJSON(`${API}/api/zone_effort?weeks=1`).catch(() => ({status:"no"}));
+
+  if(cur.status !== "ok"){
+    const el = document.getElementById("zones_delta");
+    if(el) el.textContent = "Not enough data yet to estimate zones reliably.";
+    return;
+  }
+
+  const order = ["Z1","Z2","Z3","Z4","Z5"];
+  const colors = {
+    Z1:"#4da3ff66",
+    Z2:"#3ddc9766",
+    Z3:"#ffcc6666",
+    Z4:"#ff6b6b66",
+    Z5:"#ff4dff44",
+  };
+
+  const hrmax = cur.hrmax;
+  const lt1 = cur.lt1_hr;
+  const lt2 = cur.lt2_hr;
+
+  // ---------- Zone band plot ----------
+  const shapes = [];
+  for(const z of order){
+    const [lo,hi] = cur.zones[z];
+    shapes.push({
+      type:"rect", xref:"x", yref:"paper",
+      x0:lo, x1:hi, y0:0, y1:1,
+      fillcolor:colors[z], line:{width:0}
+    });
+  }
+
+  const markerLines = [
+    {x:lt1, dash:"dash"},
+    {x:lt2, dash:"dash"},
+    {x:hrmax, dash:"dot"},
+  ].map(m => ({
+    type:"line", xref:"x", yref:"paper",
+    x0:m.x, x1:m.x, y0:0, y1:1,
+    line:{color:"#e9eef6", width:2, dash:m.dash}
+  }));
+
+  if(document.getElementById("zones_band")){
+    Plotly.newPlot("zones_band", [{
+      x:[Math.max(80, 0.55*hrmax), hrmax+5],
+      y:[0,0],
+      mode:"lines",
+      line:{color:"rgba(0,0,0,0)"},
+      showlegend:false
+    }], {
+      ...DARK,
+      shapes:[...shapes, ...markerLines],
+      xaxis:{...DARK.xaxis, title:"Heart rate (bpm)", range:[Math.max(80, 0.55*hrmax), hrmax+5]},
+      yaxis:{visible:false},
+    }, {responsive:true});
+  }
+
+  // ---------- Delta text ----------
+  let deltaTxt = `Current: HRmax≈${hrmax} · LT1≈${lt1} · LT2≈${lt2}.`;
+  if(old && old.status === "ok"){
+    const d1 = lt1 - old.lt1_hr;
+    const d2 = lt2 - old.lt2_hr;
+    const dm = hrmax - old.hrmax;
+    const sign = v => (v>=0?"+":"");
+    deltaTxt += `  Change vs 30d: LT1 ${sign(d1)}${d1} bpm · LT2 ${sign(d2)}${d2} bpm · HRmax ${sign(dm)}${dm} bpm.`;
+  }
+  const deltaEl = document.getElementById("zones_delta");
+  if(deltaEl) deltaEl.textContent = deltaTxt;
+
+  // ---------- Weekly time-in-zone stacked bar ----------
+  if(week && week.status === "ok" && document.getElementById("zones_week_plot")){
+    const mins = order.map(z => (week.zones[z]?.minutes ?? 0));
+    const pct = (() => {
+      const total = mins.reduce((a,b)=>a+b,0) || 1;
+      return mins.map(m => Math.round(100*m/total));
+    })();
+
+    const traces = order.map((z,i)=>({
+      type:"bar", orientation:"h",
+      y:["This week"],
+      x:[mins[i]],
+      name:`${z} (${mins[i]} min)`,
+      marker:{color:colors[z].replace("66","aa").replace("44","88")},
+      hovertemplate:`${z}: ${mins[i]} min (${pct[i]}%)<extra></extra>`
+    }));
+
+    Plotly.newPlot("zones_week_plot", traces, {
+      ...DARK,
+      barmode:"stack",
+      xaxis:{...DARK.xaxis, title:"minutes"},
+      yaxis:{visible:false},
+    }, {responsive:true});
+  }
+}
+
+// run once when DOM ready
+document.addEventListener("DOMContentLoaded", () => {
+  if(document.getElementById("zones_band")){
+    renderZonesGraphical().catch(err => console.error("Zones graphical render failed", err));
+  }
+});
