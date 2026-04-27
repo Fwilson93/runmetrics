@@ -234,7 +234,22 @@ function attachControls(){
 })();
 
 /* RUNMETRICS_ZONES_GRAPHICAL_V1 */
+
 async function renderZonesGraphical(){
+  try {
+    const cur = await fetchJSON(`${API}/api/zones`);
+    const old = await fetchJSON(`${API}/api/zones_history?days_ago=30`).catch(() => null);
+    const week = await fetchJSON(`${API}/api/zone_effort?weeks=1`).catch(() => null);
+
+    if(cur.status !== "ok"){
+      document.getElementById("zones_delta").textContent =
+        "HR zones unavailable (insufficient data).";
+      return;
+    }
+
+    // --- existing body of renderZonesGraphical continues unchanged ---
+
+// SAFE_ZONES_WRAPPER_V1
   const API = (typeof window !== "undefined" && window.API) ? window.API : "https://runmetrics.onrender.com";
 
   async function fetchJSON(url){
