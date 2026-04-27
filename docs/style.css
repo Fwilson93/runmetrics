@@ -5,15 +5,9 @@
   --line:#1f2430;
   --fg:#e9eef6;
   --muted:#a7b0c0;
-  --accent:#6aa9ff;
-
-  --ctl:#6aa9ff;
-  --atl:#ff6b6b;
-  --tsb:#3ddc97;
 }
 
 *{ box-sizing:border-box; }
-
 html,body{ height:100%; }
 
 body{
@@ -48,15 +42,32 @@ h1{ margin:0; font-size:2rem; letter-spacing:-0.02em; }
   box-shadow: 0 10px 30px rgba(0,0,0,0.25);
 }
 
+.card.compact{ padding-top:10px; }
+.card.subtle{
+  margin-top: 8px;
+  padding: 8px 14px;
+  font-size: 0.95rem;
+  color: var(--muted);
+  background: linear-gradient(180deg, #0d0f15, #0b0d12);
+}
+
 h2{ margin:0 0 8px; font-size:1.2rem; }
-.explain{ color:var(--muted); font-size:0.95rem; margin:0 0 8px; line-height:1.35; }
+h3{ margin:0 0 8px; font-size:1.05rem; }
+
+.explain{
+  color:var(--muted);
+  font-size:0.95rem;
+  margin:0 0 8px;
+  line-height:1.35;
+}
 
 .plot{ width:100%; height:420px; }
-.smallplot{ height:320px; }
+.plot.tinyplot{ height:180px; }
 
 .controls{ display:grid; gap:10px; margin:8px 0 10px; }
 .controls label{ display:grid; gap:6px; }
 input[type="range"]{ width:100%; }
+
 select{
   width:100%;
   padding:8px;
@@ -66,53 +77,24 @@ select{
   color:var(--fg);
 }
 
+.grid-two{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  margin-top:14px;
+}
+
 .tablewrap{ overflow-x:auto; }
 table{ width:100%; border-collapse:collapse; min-width:680px; }
 th,td{ padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
 th{ text-align:left; font-weight:650; }
 td.num,th.num{ text-align:right; font-variant-numeric: tabular-nums; }
 
-@media (min-width: 860px){
+@media (min-width: 900px){
   body{ padding:24px 32px; max-width:1200px; margin:auto; }
   h1{ font-size:2.35rem; }
   .controls{ grid-template-columns:1fr 1fr; align-items:end; }
+  .grid-two{ grid-template-columns:1fr 1fr; }
   .plot{ height:460px; }
-  .smallplot{ height:360px; }
-}
-
-
-/* === HR panels side-by-side === */
-.grid-two {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
-  margin-top: 14px;
-}
-
-@media (min-width: 900px) {
-  .grid-two {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.card.compact {
-  padding-top: 10px;
-}
-
-.plot.tinyplot {
-  height: 200px;
-}
-
-
-/* === HR skew summary line === */
-.card.subtle {
-  padding: 10px 14px;
-  font-size: 0.95rem;
-  color: var(--muted);
-  background: linear-gradient(180deg, #0e1016, #0b0d12);
-}
-
-/* Make HR plots calmer */
-.plot.tinyplot {
-  height: 180px;
+  .plot.tinyplot{ height:200px; }
 }

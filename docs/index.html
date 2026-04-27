@@ -5,10 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>RunMetrics</title>
 
-  <!-- ✅ CSS -->
-  <link rel="stylesheet" href="style.css?v=1777284571"/>
-
-  <!-- ✅ Plotly -->
+  <link rel="stylesheet" href="style.css"/>
   <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
 </head>
 <body>
@@ -25,9 +22,10 @@
     <p class="explain">
       <strong>Fitness (CTL)</strong>: long‑term load (how fit you’re becoming).<br>
       <strong>Fatigue (ATL)</strong>: short‑term load (how tired you are now).<br>
-      <strong>Form (TSB)</strong> = CTL − ATL (freshness).<br>
-      <span class="muted">Solid lines = past · Dotted = Rest · Dashed = Recommended · Dash‑dot thin = Your slider choice</span>
+      <strong>Form (TSB)</strong> = CTL − ATL (freshness).
+      <span class="muted">Past = solid. Projection = your slider choice (dash‑dot).</span>
     </p>
+    <div id="rec_workout" class="small muted"></div>
     <div id="load_plot" class="plot"></div>
     <div id="load_meta" class="small muted"></div>
   </section>
@@ -35,9 +33,8 @@
   <section class="card">
     <h2>What if I train tomorrow?</h2>
     <p class="explain">
-      Adjust duration/intensity. The ranked table updates, and the long‑term plot above shows the next‑week projections.
+      Adjust duration/intensity. The ranked table updates, and the long‑term plot above shows the next‑week projection for your choice.
     </p>
-
     <div class="controls">
       <label>
         Duration: <span id="dur_lbl"></span> min
@@ -56,19 +53,11 @@
         </select>
       </label>
     </div>
-
     <div id="scenario_table" class="small"></div>
   </section>
 
-  <footer class="small muted">
-    ⚠️ Outstanding: migrate DB off Render free tier before 30‑day expiry.
-  
-  
-
-
-  <section class="grid-two">
-  <div id="zones_global_skew" class="card subtle"></div>
-
+  <!-- HR panels: compact side-by-side -->
+  <section class="grid-two" id="hr_grid">
     <section class="card compact" id="zones_week_panel">
       <h3>Time in HR zones (this week)</h3>
       <div id="zones_week_plot" class="plot tinyplot"></div>
@@ -81,9 +70,13 @@
     </section>
   </section>
 
-</footer>
+  <!-- Full-width skew line below both panels -->
+  <section class="card subtle" id="zones_global_skew"></section>
 
-  <!-- ✅ App JS -->
-  <script src="script.js?v=1777284571"></script>
+  <footer class="small muted">
+    ⚠️ Outstanding: migrate DB off Render free tier before 30‑day expiry.
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
