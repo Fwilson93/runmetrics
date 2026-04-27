@@ -156,9 +156,30 @@ function attachControls(){
 
 document.addEventListener("DOMContentLoaded", async () => {
   try{
+    
     await loadRecommendation();
+    setCustomDefaultsFromRecommendation(RECOMMENDED);
+    
     attachControls();
+    
     await renderMain();
+
+    // Recommendation explanation panel
+    try {
+      const week = await fetchJSON(`${API}/api/zone_effort?weeks=1`);
+      const explain = buildRecommendationExplanation(RECOMMENDED, series, week.zones);
+      const el = document.getElementById("recommendation_explain");
+      if(el) el.innerHTML = explain;
+    } catch(e) {
+      const el = document.getElementById("recommendation_explain");
+      if(el) el.textContent = "Recommendation details unavailable.";
+    }
+
+    // Ensure HR panels render (non-fatal)
+    if(typeof renderHRPanels === "function"){
+      renderHRPanels().catch(()=>{});
+    }
+    
   }catch(e){
     console.error(e);
     alert("Dashboard couldn't load API data. If Render was sleeping, refresh.");
@@ -202,4 +223,26 @@ function buildRecommendationExplanation(rec, histSeries, weekZones){
     ${why.join(", ")}. This makes a controlled session appropriate today.<br>
     <em>Trade‑off:</em> ${trade}
   `;
+}
+
+function setCustomDefaultsFromRecommendation(rec){
+  if(!rec) return;
+
+  const durEl = document.getElementById("dur");
+  const intEl = document.getElementById("intensity_mode");
+
+  // Slightly ambitious but capped
+  let newDur = Math.min(rec.dur_min * 1.15, rec.dur_min + 20);
+  let newInt = Math.min(rec.intensity + 0.03, 0.80);
+
+  // Prefer duration increase for Z2-type recommendations
+  if(rec.intensity <= 0.68){
+    durEl.value = Math.round(newDur / 5) * 5;
+    intEl.value = rec.intensity;
+  } else {
+    durEl.value = rec.dur_min;
+    intEl.value = newInt.toFixed(2);
+  }
+
+  document.getElementById("dur_lbl").textContent = durEl.value;
 }
