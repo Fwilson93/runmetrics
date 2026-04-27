@@ -364,3 +364,111 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Dashboard couldn't load API data. If Render was sleeping, refresh.");
   });
 });
+
+
+/* RM_LOCK_RECOMMENDED_V1
+   Purpose:
+   - Keep the Recommended row stable (does not change when sliders move).
+   - After the table first renders, set Custom sliders to a slightly more ambitious default.
+   - Does not modify your existing rendering logic; it only post-processes the DOM.
+*/
+(function(){
+  let cachedRecommendedHTML = null;
+  let ignoreObserver = false;
+
+  function findRecommendedRow(){
+    const host = document.getElementById("scenario_table");
+    if(!host) return null;
+    const rows = host.querySelectorAll("tr");
+    let recRow = null;
+    rows.forEach(r => {
+      const txt = (r.textContent || "").toLowerCase();
+      if(txt.includes("recommended")) recRow = r;
+    });
+    return recRow;
+  }
+
+  function cacheOrRestoreRecommended(){
+    const recRow = findRecommendedRow();
+    if(!recRow) return false;
+
+    // cache first time
+    if(cachedRecommendedHTML === null){
+      cachedRecommendedHTML = recRow.innerHTML;
+      return true;
+    }
+
+    // restore if it changed
+    if(recRow.innerHTML !== cachedRecommendedHTML){
+      ignoreObserver = true;
+      recRow.innerHTML = cachedRecommendedHTML;
+      ignoreObserver = false;
+    }
+    return true;
+  }
+
+  function setAmbitiousCustomDefaults(){
+    const durEl = document.getElementById("dur");
+    const intEl = document.getElementById("intensity_mode");
+    if(!durEl || !intEl) return;
+
+    // Use current slider values as baseline (these typically match the initial recommended state)
+    let dur = parseInt(durEl.value || "45", 10);
+    let inten = parseFloat(intEl.value || "0.65");
+
+    // Slightly more ambitious but sensible:
+    // - If aerobic-ish, add +15 min duration (cap 90).
+    // - Else bump intensity one notch (cap ~0.80), keep duration.
+    if(inten <= 0.65){
+      dur = Math.min(dur + 15, 90);
+    } else {
+      const opts = Array.from(intEl.options).map(o => parseFloat(o.value)).sort((a,b)=>a-b);
+      const next = opts.find(v => v > inten && v <= 0.80);
+      inten = (next !== undefined) ? next : Math.min(inten + 0.03, 0.80);
+    }
+
+    // snap duration to 5 min steps
+    durEl.value = String(Math.round(dur/5)*5);
+    // snap intensity to the select’s value format
+    intEl.value = inten.toFixed(2);
+
+    const durLbl = document.getElementById("dur_lbl");
+    if(durLbl) durLbl.textContent = durEl.value;
+
+    // Trigger your existing render logic
+    durEl.dispatchEvent(new Event("input", { bubbles:true }));
+    intEl.dispatchEvent(new Event("change", { bubbles:true }));
+  }
+
+  function boot(){
+    const host = document.getElementById("scenario_table");
+    if(!host) return;
+
+    // Wait until table is rendered once, then cache recommended and set defaults.
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      const ok = cacheOrRestoreRecommended();
+      if(ok){
+        clearInterval(timer);
+
+        // Observe future changes and keep recommended stable
+        const obs = new MutationObserver(() => {
+          if(ignoreObserver) return;
+          cacheOrRestoreRecommended();
+        });
+        obs.observe(host, { childList:true, subtree:true, characterData:true });
+
+        // After caching recommended, make custom a bit more ambitious
+        setTimeout(setAmbitiousCustomDefaults, 80);
+      }
+      if(tries > 60) clearInterval(timer); // give up after ~12s
+    }, 200);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
