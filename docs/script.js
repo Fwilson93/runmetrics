@@ -143,7 +143,7 @@ async function renderLoadWithProjections(){
   const traces = [
     {x:xPast,y:ctlPast,type:"scatter",mode:"lines",name:"Fitness (CTL) past",line:{color:C.ctl,width:3}},
     {x:xPast,y:atlPast,type:"scatter",mode:"lines",name:"Fatigue (ATL) past",line:{color:C.atl,width:3}},
-    {x:xPast,y:tsbPast,type:"scatter",mode:"lines",name:"Form (TSB) past",line:{color:C.tsb,width:3,dash:"dot"}},
+    {x:xPast,y:tsbPast,type:"scatter",mode:"lines",name:"Form (TSB) past",line:{color:C.tsb,width:3}},
   ];
 
   for(const st of styles){
@@ -292,3 +292,177 @@ async function renderHRPanelsSafely() {
 }
 
 document.addEventListener("DOMContentLoaded", renderHRPanelsSafely);
+
+/* RUNMETRICS_HR_LABELS_AND_SKEW_V1 */
+async function renderHRPanelEnhanced() {
+  try {
+    // Only run if the panels exist
+    if (!document.getElementById("zones_week_plot") || !document.getElementById("zones_band_plot")) return;
+
+    const order = ["Z1","Z2","Z3","Z4","Z5"];
+    const colors = { Z1:"#4da3ff", Z2:"#3ddc97", Z3:"#ffcc66", Z4:"#ff6b6b", Z5:"#ff4dff" };
+
+    // Use existing fetchJSON/API if present; else fallback
+    const API0 = (typeof API !== "undefined") ? API : "https://runmetrics.onrender.com";
+    const fetchJSON0 = (typeof fetchJSON !== "undefined") ? fetchJSON : async (url) => {
+      const r = await fetch(url); if(!r.ok) throw new Error(`${r.status} ${r.statusText}`); return r.json();
+    };
+
+    const DARK0 = (typeof DARK !== "undefined") ? DARK : {
+      paper_bgcolor:"#0f1117",
+      plot_bgcolor:"#0f1117",
+      font:{color:"#e9eef6"},
+      xaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
+      yaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
+      legend:{orientation:"h"},
+      margin:{t:18,r:10,l:30,b:40},
+    };
+
+    const zones = await fetchJSON0(`${API0}/api/zones`);
+    const zonesOld = await fetchJSON0(`${API0}/api/zones_history?days_ago=90`);
+    const week = await fetchJSON0(`${API0}/api/zone_effort?weeks=1`);
+
+    // ---------- Weekly time-in-zone stacked bar + skew summary ----------
+    if (week.status === "ok") {
+      const mins = order.map(z => (week.zones[z]?.minutes ?? 0));
+      const total = mins.reduce((a,b)=>a+b,0) || 1;
+      const frac = mins.map(m => m/total);
+
+      const traces = order.map((z,i)=>({
+        type:"bar",
+        orientation:"h",
+        y:["This week"],
+        x:[mins[i]],
+        name:`${z} (${mins[i]} min)`,
+        marker:{color:colors[z]},
+        hovertemplate:`${z}: ${mins[i]} min (${Math.round(100*frac[i])}%)<extra></extra>`
+      }));
+
+      Plotly.newPlot("zones_week_plot", traces, {
+        ...DARK0,
+        barmode:"stack",
+        xaxis:{...DARK0.xaxis, title:"minutes"},
+        yaxis:{visible:false},
+        margin:{t:16,r:10,l:20,b:40},
+      }, {responsive:true});
+
+      // Science-based skew summary (cautious language)
+      const z1 = frac[0], z2 = frac[1], z3 = frac[2], z4 = frac[3], z5 = frac[4];
+      const hard = z4 + z5;
+
+      let summary;
+      if (z2 >= 0.55 && z3 < 0.25 && hard < 0.10) {
+        summary = "Skew: mostly aerobic (Z2). Likely supports aerobic efficiency / durability (base); may under‑stimulate high‑intensity adaptations (Z4–Z5) if sustained for many weeks.";
+      } else if (z3 >= 0.25) {
+        summary = "Skew: tempo‑heavy (Z3). Can build muscular endurance and threshold‑adjacent strength, but often carries fatigue—balance with more Z1–Z2 and keep true Z4 sessions deliberate.";
+      } else if (hard >= 0.12) {
+        summary = "Skew: higher intensity (Z4–Z5). Supports VO₂/speed‑end adaptations, but benefits most when backed by Z2 volume and adequate recovery.";
+      } else {
+        summary = "Skew: fairly balanced across zones. Good general development; adjust depending on whether you’re building base (more Z2) or sharpening (more Z4).";
+      }
+
+      // Put summary just under the weekly plot
+      let summaryEl = document.getElementById("zones_week_summary");
+      if (!summaryEl) {
+        summaryEl = document.createElement("div");
+        summaryEl.id = "zones_week_summary";
+        summaryEl.className = "small muted";
+        summaryEl.style.marginTop = "6px";
+        document.getElementById("zones_week_plot").parentElement.appendChild(summaryEl);
+      }
+      summaryEl.textContent = summary;
+    }
+
+    // ---------- HR zone band: label zones + label 90d lines ----------
+    if (zones.status !== "ok") return;
+
+    const hrmax = zones.hrmax;
+    const lt1 = zones.lt1_hr;
+    const lt2 = zones.lt2_hr;
+
+    // Build zone rectangles
+    const shapes = [];
+    const annotations = [];
+
+    order.forEach(z => {
+      const [lo, hi] = zones.zones[z];
+      shapes.push({
+        type:"rect", xref:"x", yref:"paper",
+        x0:lo, x1:hi, y0:0, y1:1,
+        fillcolor: colors[z] + "55",
+        line:{width:0}
+      });
+
+      const mid = (lo + hi) / 2;
+      annotations.push({
+        x: mid,
+        y: 1.08,
+        xref: "x",
+        yref: "paper",
+        text: `${z}  ${Math.round(lo)}–${Math.round(hi)}`,
+        showarrow: false,
+        font: {color:"#e9eef6", size: 11},
+        align: "center"
+      });
+    });
+
+    // Helper to add labelled vertical lines
+    const addVLine = (x, label, dash, opacity) => {
+      shapes.push({
+        type:"line", xref:"x", yref:"paper",
+        x0:x, x1:x, y0:0, y1:1,
+        line:{color:`rgba(233,238,246,${opacity})`, width:2, dash:dash}
+      });
+      annotations.push({
+        x: x,
+        y: -0.10,
+        xref:"x",
+        yref:"paper",
+        text: label,
+        showarrow:false,
+        font:{color:`rgba(233,238,246,${opacity})`, size:11},
+        align:"center"
+      });
+    };
+
+    addVLine(lt1, "LT1", "solid", 1.0);
+    addVLine(lt2, "LT2", "solid", 1.0);
+    addVLine(hrmax, "HRmax", "dot", 0.9);
+
+    if (zonesOld && zonesOld.status === "ok") {
+      addVLine(zonesOld.lt1_hr, "LT1 (90d ago)", "dash", 0.55);
+      addVLine(zonesOld.lt2_hr, "LT2 (90d ago)", "dash", 0.55);
+      addVLine(zonesOld.hrmax, "HRmax (90d ago)", "dot", 0.45);
+    }
+
+    Plotly.newPlot("zones_band_plot", [{
+      x:[Math.max(80,0.55*hrmax), hrmax+5],
+      y:[0,0],
+      mode:"lines",
+      line:{color:"rgba(0,0,0,0)"},
+      showlegend:false
+    }], {
+      ...DARK0,
+      shapes,
+      annotations,
+      xaxis:{...DARK0.xaxis, title:"Heart rate (bpm)", range:[Math.max(80,0.55*hrmax), hrmax+5]},
+      yaxis:{visible:false},
+      margin:{t:30,r:10,l:20,b:55},
+    }, {responsive:true});
+
+    const note = document.getElementById("zones_band_note");
+    if (note) {
+      note.textContent = `Current: LT1≈${lt1} bpm · LT2≈${lt2} bpm · HRmax≈${hrmax} bpm (estimates from your data).`;
+    }
+
+  } catch (e) {
+    console.warn("HR panel enhancement failed (non-fatal):", e);
+  }
+}
+
+// Run after DOM ready (does not interfere with main panels)
+document.addEventListener("DOMContentLoaded", () => {
+  if (document.getElementById("zones_band_plot") && document.getElementById("zones_week_plot")) {
+    renderHRPanelEnhanced();
+  }
+});
