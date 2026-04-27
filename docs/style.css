@@ -102,3 +102,17 @@ td.num,th.num{ text-align:right; font-variant-numeric: tabular-nums; }
 .plot.tinyplot {
   height: 200px;
 }
+
+
+/* === HR skew summary line === */
+.card.subtle {
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  color: var(--muted);
+  background: linear-gradient(180deg, #0e1016, #0b0d12);
+}
+
+/* Make HR plots calmer */
+.plot.tinyplot {
+  height: 180px;
+}

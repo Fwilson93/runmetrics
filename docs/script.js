@@ -17,7 +17,7 @@ const DARK = {
   font:{color:"#e9eef6"},
   xaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
   yaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
-  legend:{orientation:"h"},
+  legend:{orientation:"h", font:{size:10}},
   margin:{t:20,r:10,l:60,b:45},
 };
 
@@ -213,7 +213,7 @@ async function renderHRPanelsSafely() {
       font:{color:"#e9eef6"},
       xaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
       yaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
-      legend:{orientation:"h"},
+      legend:{orientation:"h", font:{size:10}},
       margin:{t:20,r:10,l:30,b:40},
     };
 
@@ -314,7 +314,7 @@ async function renderHRPanelEnhanced() {
       font:{color:"#e9eef6"},
       xaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
       yaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
-      legend:{orientation:"h"},
+      legend:{orientation:"h", font:{size:10}},
       margin:{t:18,r:10,l:30,b:40},
     };
 
@@ -362,15 +362,12 @@ async function renderHRPanelEnhanced() {
       }
 
       // Put summary just under the weekly plot
-      let summaryEl = document.getElementById("zones_week_summary");
-      if (!summaryEl) {
-        summaryEl = document.createElement("div");
-        summaryEl.id = "zones_week_summary";
-        summaryEl.className = "small muted";
-        summaryEl.style.marginTop = "6px";
-        document.getElementById("zones_week_plot").parentElement.appendChild(summaryEl);
+      
+      let global = document.getElementById("zones_global_skew");
+      if (global) {
+        global.textContent = summary;
       }
-      summaryEl.textContent = summary;
+    
     }
 
     // ---------- HR zone band: label zones + label 90d lines ----------
