@@ -565,3 +565,34 @@ document.addEventListener("DOMContentLoaded", () => {
     boot();
   }
 })();
+
+
+/* RM_RUNNING_LOAD_CALIBRATION_V1
+   Calibrate a running-specific load scale from recent history.
+   Applied ONLY to projections (not past CTL).
+*/
+async function computeRunScale(){
+  try{
+    const hist = await fetchJSON(`${API}/api/load?days=56`);
+    const s = hist.series || [];
+    if(s.length < 14) return 0.5; // fallback
+
+    // realised CTL ramp
+    const ctl_start = s[0].ctl;
+    const ctl_end = s[s.length-1].ctl;
+    const weeks = s.length / 7.0;
+    const realised_per_week = (ctl_end - ctl_start) / weeks;
+
+    // plausible running ramp (centre of typical sustainable range)
+    const target_per_week = Math.max(2.5, Math.min(7.0, realised_per_week));
+
+    // model ramp implied by raw load (protect against divide-by-zero)
+    const model_per_week = realised_per_week !== 0 ? realised_per_week : 5.0;
+
+    const k = target_per_week / model_per_week;
+    return Math.max(0.25, Math.min(1.0, k));
+  }catch(e){
+    console.warn("Run scale calibration failed; using fallback", e);
+    return 0.5;
+  }
+}
