@@ -306,6 +306,11 @@ async function renderMain(){
     </p>
   `;
 
+  try {
+    const recRow = rows.find(r => r.label.startsWith("Recommended"));
+    updateRecommendationExplanation(recRow);
+  } catch(e){}
+
   // MAIN PLOT: past solid; ONLY custom projection
   const xFut = nextDatesFrom(lastDate, 7);
   const xProj = [lastDate, ...xFut];
@@ -364,3 +369,25 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Dashboard couldn't load API data. If Render was sleeping, refresh.");
   });
 });
+
+/* RECOMMENDATION_EXPLAIN_V1 */
+function updateRecommendationExplanation(recRow){
+  const el = document.getElementById("recommendation_explain");
+  if(!el || !recRow) return;
+
+  let intensityText = "aerobic (Z2)";
+  if(recRow.label.toLowerCase().includes("tempo")) intensityText = "tempo";
+  if(recRow.label.toLowerCase().includes("steady")) intensityText = "steady aerobic";
+
+  let tradeoff =
+    intensityText === "aerobic (Z2)"
+    ? "This prioritises aerobic efficiency and durability, but does not strongly stimulate high-intensity (Z4–Z5) performance."
+    : "This stresses higher-intensity systems, but adds fatigue and should be balanced with easier aerobic work.";
+
+  el.innerHTML = `
+    <strong>Recommended for tomorrow:</strong>
+    ${recRow.label}.<br>
+    This is suggested to support fitness progression while keeping fatigue under control based on your recent load and projected freshness.<br>
+    <em>Trade-off:</em> ${tradeoff}
+  `;
+}
