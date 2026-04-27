@@ -4,50 +4,75 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>RunMetrics</title>
-  style.css
-  https://cdn.plot.ly/plotly-2.30.0.min.jsscript>
+
+  <link rel="stylesheet" href="./style.css"/>
+
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
 </head>
 <body>
-  <header>
-    <h1>🏃 RunMetrics</h1>
-    <p class="sub">Weekly progress, form, and “what‑if” training scenarios</p>
-    <p class="small">Designed for phone first. Data is yours.</p>
+  <header class="top">
+    <div>
+      <h1>🏃 RunMetrics</h1>
+      <div class="sub">Weekly progress • Form • Scenarios • Zones</div>
+      <div class="small muted">Backend: <span id="api_url"></span></div>
+    </div>
+    <div class="pill" id="db_note">⚠️ Outstanding: migrate DB off Render free tier before 30‑day expiry</div>
   </header>
 
-  <section class="card">
-    <h2>Weekly distance vs goal</h2>
-    <div id="weekly_plot" class="plot"></div>
-    <div id="weekly_meta" class="small"></div>
+  <section class="grid">
+    <div class="card">
+      <h2>Weekly distance vs goal</h2>
+      <div id="weekly_plot" class="plot"></div>
+      <div id="weekly_meta" class="small muted"></div>
+    </div>
+
+    <div class="card">
+      <h2>Fitness / fatigue / form</h2>
+      <div id="load_plot" class="plot"></div>
+      <div id="load_meta" class="small muted"></div>
+    </div>
   </section>
 
-  <section class="card">
-    <h2>Fitness / fatigue / form</h2>
-    <div id="load_plot" class="plot"></div>
-    <div id="load_meta" class="small"></div>
+  <section class="grid">
+    <div class="card">
+      <h2>Scenario simulator (next 14 days)</h2>
+      <div class="small muted">Top options ranked by projected Form (TSB) + gentle CTL gain.</div>
+      <div id="scenario_plot" class="plot"></div>
+      <div id="scenario_table" class="small"></div>
+    </div>
+
+    <div class="card">
+      <h2>HR zones (data-derived)</h2>
+      <div class="small muted">Estimates based on your recorded data (not age formulas).</div>
+      <div id="zones_plot" class="plot smallplot"></div>
+      <div id="zones_meta" class="small muted"></div>
+    </div>
   </section>
 
   <section class="card">
     <h2>Recent activities</h2>
-    <table id="recent">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Name</th>
-          <th>Type</th>
-          <th>km</th>
-          <th>min/km</th>
-          <th>HR</th>
-          <th>EF</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="tablewrap">
+      <table id="recent">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th class="num">km</th>
+            <th class="num">pace</th>
+            <th class="num">HR</th>
+            <th class="num">EF</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </section>
 
-  <footer class="small">
-    <p>⚠️ Outstanding task: migrate database off Render free tier before 30‑day expiry.</p>
+  <footer class="small muted">
+    Tip: refresh the page if Render was sleeping (first load can be slow on free tier).
   </footer>
 
-  script.jsscript>
+  <script src="./script.js"></script>
 </body>
 </html>
