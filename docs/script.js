@@ -73,3 +73,70 @@ async function recent(){
 }
 
 zoneEffort(); loadBar(); scenarios(); recent();
+
+// --------- shared dark layout for Plotly ----------
+const DARK_LAYOUT = {
+  paper_bgcolor: "#121622",
+  plot_bgcolor: "#121622",
+  font: { color: "#e8ecf3" },
+  xaxis: { gridcolor: "#20263a", zerolinecolor: "#20263a" },
+  yaxis: { gridcolor: "#20263a", zerolinecolor: "#20263a" },
+  legend: { orientation: "h" },
+  margin: { t: 20, r: 15, l: 55, b: 45 }
+};
+
+// --------- replace scenario bar with table + line plot ----------
+async function scenarios(){
+  const d = await j(`${API}/api/scenarios?days=14`);
+  const s = d.scenarios.slice(0,3); // already ranked
+
+  // --- table (primary) ---
+  const rows = s.map(o => `
+    <tr>
+      <td><strong>${o.name}</strong></td>
+      <td class="num">${o.delta_ctl.toFixed(1)}</td>
+      <td class="num">${o.delta_atl.toFixed(1)}</td>
+      <td class="num">${o.delta_tsb.toFixed(1)}</td>
+      <td>${o.recommendation === "good" ? "✅ sensible" : "⚠️ risky"}</td>
+    </tr>
+  `).join("");
+
+  document.getElementById("scenario_meta").innerHTML = `
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr>
+          <th>Option</th>
+          <th class="num">ΔFitness</th>
+          <th class="num">ΔFatigue</th>
+          <th class="num">ΔForm</th>
+          <th>Assessment</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="small" style="margin-top:6px">
+      <strong>Fitness (CTL)</strong> = long‑term load · 
+      <strong>Fatigue (ATL)</strong> = short‑term load · 
+      <strong>Form (TSB)</strong> = CTL − ATL
+    </p>
+  `;
+
+  // --- line plot (secondary) ---
+  const N = s[0].series.tsb.length;
+  const x = Array.from({length:N}, (_,i)=> i+1);
+
+  const traces = s.map(o => ({
+    x,
+    y:o.series.tsb,
+    type:"scatter",
+    mode:"lines",
+    name:o.name,
+    line:{width:2}
+  }));
+
+  Plotly.newPlot("scenario_bar", traces, {
+    ...DARK_LAYOUT,
+    xaxis:{ title:"days ahead" },
+    yaxis:{ title:"Form (TSB)" }
+  }, {responsive:true});
+}
