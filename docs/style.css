@@ -79,3 +79,26 @@ td.num,th.num{ text-align:right; font-variant-numeric: tabular-nums; }
   .plot{ height:460px; }
   .smallplot{ height:360px; }
 }
+
+
+/* === HR panels side-by-side === */
+.grid-two {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+@media (min-width: 900px) {
+  .grid-two {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.card.compact {
+  padding-top: 10px;
+}
+
+.plot.tinyplot {
+  height: 200px;
+}
