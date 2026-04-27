@@ -81,6 +81,7 @@ function fatigueText(v){ return v > 1 ? "more tired" : (v < -1 ? "less tired" : 
 function freshnessText(v){ return v > 1 ? "fresher" : (v < -1 ? "more tired" : "about the same"); }
 
 let RECOMMENDED = null;
+let READY = false;
 
 async function loadRecommendation(){
   const rec = await fetchJSON(`${API}/api/recommendation?days=7`);
@@ -108,7 +109,9 @@ async function renderMain(){
   
   const safeDur = Math.max(dur, 5);
   const safeIntensity = Math.max(intensity, 0.4);
-  const scenCustom = await fetchJSON(`${API}/api/scenarios_dynamic?days=7&dur_min=${safeDur}&intensity=${safeIntensity}`);
+  
+  if(!READY) return;
+  const scenCustom = await fetchJSON(`${API}/api/scenarios_dynamic?days=7&dur_min=${dur}&intensity=${intensity}`);
   const custom = (scenCustom.scenarios || []).find(s => s.name === "Custom") || scenCustom.scenarios[0];
   
   // Rest computed analytically (no backend call)
@@ -155,6 +158,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initialiseSlidersSafely();
     
     setCustomDefaultsFromRecommendation(RECOMMENDED);
+    READY = true;
     
     attachControls();
     
