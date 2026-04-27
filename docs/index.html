@@ -6,7 +6,7 @@
   <title>RunMetrics</title>
 
   <!-- ✅ CSS -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=1777284571"/>
 
   <!-- ✅ Plotly -->
   <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
@@ -25,7 +25,8 @@
     <p class="explain">
       <strong>Fitness (CTL)</strong>: long‑term load (how fit you’re becoming).<br>
       <strong>Fatigue (ATL)</strong>: short‑term load (how tired you are now).<br>
-      <strong>Form (TSB)</strong> = CTL − ATL (freshness).
+      <strong>Form (TSB)</strong> = CTL − ATL (freshness).<br>
+      <span class="muted">Solid lines = past · Dotted = Rest · Dashed = Recommended · Dash‑dot thin = Your slider choice</span>
     </p>
     <div id="load_plot" class="plot"></div>
     <div id="load_meta" class="small muted"></div>
@@ -33,6 +34,10 @@
 
   <section class="card">
     <h2>What if I train tomorrow?</h2>
+    <p class="explain">
+      Adjust duration/intensity. The ranked table updates, and the long‑term plot above shows the next‑week projections.
+    </p>
+
     <div class="controls">
       <label>
         Duration: <span id="dur_lbl"></span> min
@@ -55,7 +60,11 @@
     <div id="scenario_table" class="small"></div>
   </section>
 
-  <!-- ✅ Your app JS -->
-  <script src="script.js"></script>
+  <footer class="small muted">
+    ⚠️ Outstanding: migrate DB off Render free tier before 30‑day expiry.
+  </footer>
+
+  <!-- ✅ App JS -->
+  <script src="script.js?v=1777284571"></script>
 </body>
 </html>
