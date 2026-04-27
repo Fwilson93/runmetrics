@@ -1,3 +1,13 @@
+/* RUNMETRICS_DARK_THEME: enforce dark Plotly theme */
+const RUNMETRICS_PLOTLY_DARK = {
+  paper_bgcolor: "#0f1117",
+  plot_bgcolor: "#0f1117",
+  font: { color: "#e9eef6" },
+  xaxis: { gridcolor: "#1f2430", zerolinecolor: "#1f2430" },
+  yaxis: { gridcolor: "#1f2430", zerolinecolor: "#1f2430" },
+  legend: { orientation: "h" },
+  margin: { t: 20, r: 10, l: 60, b: 45 }
+};
 const API = "https://runmetrics.onrender.com";
 document.getElementById("api_url").textContent = API;
 
