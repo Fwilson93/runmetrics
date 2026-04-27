@@ -195,3 +195,62 @@ zoneEffort = async function(){
   p.textContent = summary;
   document.getElementById("zone_effort_meta").appendChild(p);
 };
+
+// --------- auto-tune zone targets from CTL trend ----------
+function inferPhaseFromCTL(series){
+  if(series.length < 28) return {phase:"unknown", factor:1.0};
+
+  const recent = series.slice(-7).map(d => d.ctl);
+  const earlier = series.slice(-28,-21).map(d => d.ctl);
+
+  const rAvg = recent.reduce((a,b)=>a+b,0)/recent.length;
+  const eAvg = earlier.reduce((a,b)=>a+b,0)/earlier.length;
+  const delta = rAvg - eAvg;
+
+  if(delta > 2) return {phase:"base/build", factor:1.15};
+  if(delta < -2) return {phase:"recovery", factor:0.85};
+  return {phase:"maintenance", factor:1.0};
+}
+
+// override zoneEffort to apply adaptive targets
+const _zoneEffortAuto = zoneEffort;
+zoneEffort = async function(){
+  const d = await j(`${API}/api/zone_effort?weeks=1`);
+  const l = await j(`${API}/api/load?days=42`);
+  if(d.status !== "ok" || !l.series) return;
+
+  const { phase, factor } = inferPhaseFromCTL(l.series);
+
+  const zones = Object.keys(d.zones);
+  const minutes = [];
+  const frac = [];
+  const labels = [];
+
+  zones.forEach(z => {
+    const baseGoal = d.zones[z].goal;
+    const adjGoal =
+      (z === "Z2") ? baseGoal * factor :
+      (z === "Z3") ? baseGoal / factor :
+      baseGoal;
+
+    const m = d.zones[z].minutes;
+    const f = adjGoal ? m / adjGoal : 0;
+
+    minutes.push(m);
+    frac.push(Math.round(f*100));
+    labels.push(`${Math.round(f*100)}%`);
+  });
+
+  Plotly.newPlot("zone_effort", [{
+    x: minutes,
+    y: zones,
+    orientation: "h",
+    type: "bar",
+    text: labels,
+    textposition: "outside",
+    marker:{color:["#4da3ff","#3ddc97","#ffcc66","#ff6b6b","#ff4dff"]}
+  }], {margin:{l:40,r:20,t:10,b:30}, paper_bgcolor:"#121622"});
+
+  document.getElementById("zone_effort_meta").innerText =
+    `Targets auto‑adjusted for ${phase} phase (CTL‑based).`;
+};
