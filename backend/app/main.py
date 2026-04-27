@@ -39,3 +39,6 @@ app.include_router(phys_router)
 app.include_router(zone_effort_router)
 app.include_router(scenarios_dynamic_router)
 app.include_router(zones_history_router)
+
+from app.api.recommendation import router as recommendation_router
+app.include_router(recommendation_router)
