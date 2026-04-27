@@ -164,3 +164,42 @@ document.addEventListener("DOMContentLoaded", async () => {
     alert("Dashboard couldn't load API data. If Render was sleeping, refresh.");
   }
 });
+
+/* RECOMMENDATION_EXPLANATION_PANEL_V1 */
+function buildRecommendationExplanation(rec, histSeries, weekZones){
+  if(!rec || !histSeries.length || !weekZones) return "";
+
+  const last = histSeries[histSeries.length - 1];
+  const ctl = last.ctl, atl = last.atl, tsb = last.tsb;
+
+  const order = ["Z1","Z2","Z3","Z4","Z5"];
+  const mins = order.map(z => (weekZones[z]?.minutes ?? 0));
+  const total = mins.reduce((a,b)=>a+b,0) || 1;
+  const frac = mins.map(m => m/total);
+  const z2 = frac[1], z3 = frac[2], hard = frac[3] + frac[4];
+
+  let why = [];
+  if(tsb < -10){
+    why.push("your short‑term fatigue is elevated relative to fitness");
+  }
+  if(z3 > 0.25){
+    why.push("recent training has been weighted toward moderate/tempo intensity");
+  }
+  if(!why.length){
+    why.push("your current fitness–fatigue balance supports steady training");
+  }
+
+  let trade = "";
+  if(rec.intensity <= 0.68){
+    trade = "This prioritises aerobic durability and efficiency, but does not strongly stimulate high‑intensity (Z4–Z5) performance.";
+  } else {
+    trade = "This targets higher‑intensity adaptations, but increases fatigue and should be balanced with recovery or aerobic work.";
+  }
+
+  return `
+    <strong>Recommended for tomorrow:</strong>
+    ${Math.round(rec.dur_min)} min ${rec.label}.<br>
+    ${why.join(", ")}. This makes a controlled session appropriate today.<br>
+    <em>Trade‑off:</em> ${trade}
+  `;
+}
