@@ -110,50 +110,13 @@ async function renderMain(){
   const safeIntensity = Math.max(intensity, 0.4);
   const scenCustom = await fetchJSON(`${API}/api/scenarios_dynamic?days=7&dur_min=${safeDur}&intensity=${safeIntensity}`);
   const custom = (scenCustom.scenarios || []).find(s => s.name === "Custom") || scenCustom.scenarios[0];
-  const rest = (scenCustom.scenarios || []).find(s => s.name === "Rest") || scenCustom.scenarios[0];
-
-  // Recommended is stable
-  const rec = RECOMMENDED || (await fetchJSON(`${API}/api/recommendation?days=7`)).best;
-
-  document.getElementById("rec_workout").textContent =
-    rec.dur_min === 0 ? "Recommended tomorrow: Rest day." :
-    `Recommended tomorrow: ${Math.round(rec.dur_min)} min ${rec.label}.`;
-
-  const rows = [
-    {label:"Rest", dctl:rest.delta_ctl, datl:rest.delta_atl, dtsb:rest.delta_tsb, rec:rest.recommendation},
-    {label:`Recommended (${Math.round(rec.dur_min)} min ${intensityLabel(rec.intensity)})`, dctl:rec.delta_ctl, datl:rec.delta_atl, dtsb:rec.delta_tsb, rec:rec.recommendation},
-    {label:"Custom", dctl:custom.delta_ctl, datl:custom.delta_atl, dtsb:custom.delta_tsb, rec:custom.recommendation},
-  ];
-
-  document.getElementById("scenario_table").innerHTML = `
-    <div class="tablewrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Option</th>
-            <th class="num">Fitness change</th>
-            <th>Fatigue change</th>
-            <th>Freshness change</th>
-            <th>Assessment</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map(r=>`
-            <tr>
-              <td><strong>${r.label}</strong></td>
-              <td class="num">${arrowFor(r.dctl)} <span class="muted">${fmt(r.dctl,1)}</span></td>
-              <td>${fatigueText(r.datl)} <span class="muted">(${fmt(r.datl,1)})</span></td>
-              <td>${freshnessText(r.dtsb)} <span class="muted">(${fmt(r.dtsb,1)})</span></td>
-              <td>${recBadge(r.rec)}</td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  // Past solid + custom-only projection
-  const xFut = nextDatesFrom(lastDate, 7);
+  
+  // Rest computed analytically (no backend call)
+  const rest = computeRestDeltas({
+    ctl: lastCtl,
+    atl: lastAtl,
+    tsb: lastTsb
+  });
   const xProj = [lastDate, ...xFut];
   const withStart = (arr, startVal) => [startVal, ...arr];
 
@@ -306,4 +269,24 @@ function initialiseSlidersSafely(){
   }
 
   document.getElementById("dur_lbl").textContent = durEl.value;
+}
+
+function computeRestDeltas(current){
+  // Exponential decay consistent with ATL=7d, CTL=42d
+  const ctl_tau = 42.0;
+  const atl_tau = 7.0;
+
+  const alpha_ctl = 1.0 - Math.exp(-1.0 / ctl_tau);
+  const alpha_atl = 1.0 - Math.exp(-1.0 / atl_tau);
+
+  const ctl_next = current.ctl * (1.0 - alpha_ctl);
+  const atl_next = current.atl * (1.0 - alpha_atl);
+  const tsb_next = ctl_next - atl_next;
+
+  return {
+    delta_ctl: ctl_next - current.ctl,
+    delta_atl: atl_next - current.atl,
+    delta_tsb: tsb_next - current.tsb,
+    recommendation: (tsb_next > -15 ? "good" : "caution")
+  };
 }
