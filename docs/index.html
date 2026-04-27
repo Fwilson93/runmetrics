@@ -4,7 +4,11 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>RunMetrics</title>
-  <link rel="stylesheet" href="style.css"/>
+
+  <!-- ✅ CSS -->
+  <link rel="stylesheet" href="style.css?v=1777284571"/>
+
+  <!-- ✅ Plotly -->
   <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
 </head>
 <body>
@@ -18,18 +22,28 @@
 
   <section class="card">
     <h2>Fitness / fatigue / form (past + projected)</h2>
-    <div id="rec_workout" class="small muted"></div>
+    <p class="explain">
+      <strong>Fitness (CTL)</strong>: long‑term load (how fit you’re becoming).<br>
+      <strong>Fatigue (ATL)</strong>: short‑term load (how tired you are now).<br>
+      <strong>Form (TSB)</strong> = CTL − ATL (freshness).<br>
+      <span class="muted">Solid lines = past · Dotted = Rest · Dashed = Recommended · Dash‑dot thin = Your slider choice</span>
+    </p>
     <div id="load_plot" class="plot"></div>
     <div id="load_meta" class="small muted"></div>
   </section>
 
   <section class="card">
     <h2>What if I train tomorrow?</h2>
+    <p class="explain">
+      Adjust duration/intensity. The ranked table updates, and the long‑term plot above shows the next‑week projections.
+    </p>
+
     <div class="controls">
       <label>
         Duration: <span id="dur_lbl"></span> min
         <input id="dur" type="range" min="0" max="180" step="5" value="45">
       </label>
+
       <label>
         Intensity
         <select id="intensity_mode">
@@ -42,21 +56,15 @@
         </select>
       </label>
     </div>
-    <div id="scenario_table" class="small"></div>
-  </section>
 
-    <section class="card">
-    <h2>HR zones (visual)</h2>
-    <p class="explain">Colours are zones. Vertical lines are LT1/LT2 and observed HRmax. Below: this week's time-in-zone.</p>
-    <div id="zones_band" class="plot smallplot"></div>
-    <div id="zones_delta" class="small muted"></div>
-    <div id="zones_week_plot" class="plot smallplot"></div>
+    <div id="scenario_table" class="small"></div>
   </section>
 
   <footer class="small muted">
     ⚠️ Outstanding: migrate DB off Render free tier before 30‑day expiry.
   </footer>
 
-  <script src="script.js"></script>
+  <!-- ✅ App JS -->
+  <script src="script.js?v=1777284571"></script>
 </body>
 </html>
