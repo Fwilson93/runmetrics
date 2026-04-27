@@ -39,6 +39,13 @@ def simulate(hist_daily, add_load, days, tau_ctl=42, tau_atl=7):
     tsb = [c - a for c, a in zip(ctl, atl)]
     return ctl, atl, tsb
 
+def label(rec_tsb_final):
+    if rec_tsb_final > -5:
+        return "good"
+    if rec_tsb_final > -15:
+        return "caution"
+    return "risky"
+
 @router.get("/api/scenarios_dynamic")
 def scenarios_dynamic(
     days: int = Query(default=14, ge=7, le=28),
@@ -71,44 +78,37 @@ def scenarios_dynamic(
         atl_hist = ewma(hist_daily, 7)
         ctl0, atl0, tsb0 = ctl_hist[-1], atl_hist[-1], (ctl_hist[-1] - atl_hist[-1])
 
-        load_rest = 0.0
-        load_custom = load_proxy_from_workout(dur_min, intensity)
+        # candidates (structured)
+        rest = {"name":"Rest", "dur_min":0.0, "intensity":0.0, "load":0.0}
+
+        custom_load = load_proxy_from_workout(dur_min, intensity)
+        custom = {"name":"Custom", "dur_min":dur_min, "intensity":intensity, "load":custom_load}
 
         if intensity >= 0.80:
             alt_intensity = max(0.55, intensity - 0.12)
         else:
             alt_intensity = min(0.85, intensity + 0.10)
-        load_alt = load_proxy_from_workout(dur_min, alt_intensity)
+        alt_load = load_proxy_from_workout(dur_min, alt_intensity)
+        alt = {"name":"Alt", "dur_min":dur_min, "intensity":alt_intensity, "load":alt_load}
 
-        candidates = [
-            ("Rest", load_rest),
-            (f"Custom: {int(dur_min)}min @ {int(intensity*100)}%", load_custom),
-            (f"Alt: {int(dur_min)}min @ {int(alt_intensity*100)}%", load_alt),
-        ]
+        candidates = [rest, custom, alt]
 
         results = []
-        for name, add_load in candidates:
-            ctl, atl, tsb = simulate(hist_daily, add_load, days)
+        for c in candidates:
+            ctl, atl, tsb = simulate(hist_daily, c["load"], days)
             results.append({
-                "name": name,
-                "load_tomorrow": add_load,
+                "name": c["name"],
+                "dur_min": c["dur_min"],
+                "intensity": c["intensity"],
+                "load_tomorrow": c["load"],
                 "delta_ctl": ctl[-1] - ctl0,
                 "delta_atl": atl[-1] - atl0,
                 "delta_tsb": tsb[-1] - tsb0,
                 "series": {"ctl": ctl, "atl": atl, "tsb": tsb},
+                "recommendation": label(tsb[-1]),
             })
 
         results.sort(key=lambda r: (r["series"]["tsb"][-1], r["series"]["ctl"][-1]), reverse=True)
-
-        def label(r):
-            final_tsb = r["series"]["tsb"][-1]
-            if final_tsb > -5:
-                return "good"
-            if final_tsb > -15:
-                return "caution"
-            return "risky"
-        for r in results:
-            r["recommendation"] = label(r)
 
         return {
             "status": "ok",

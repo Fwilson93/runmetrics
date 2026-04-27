@@ -15,10 +15,10 @@ from app.api.analytics import router as analytics_router
 from app.api.physiology import router as phys_router
 from app.api.zone_effort import router as zone_effort_router
 from app.api.scenarios_dynamic import router as scenarios_dynamic_router
+from app.api.zones_history import router as zones_history_router
 
 app = FastAPI(title="RunMetrics", version="0.1.0")
 
-# Allow GitHub Pages dashboard to call GET endpoints
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -38,3 +38,4 @@ app.include_router(analytics_router)
 app.include_router(phys_router)
 app.include_router(zone_effort_router)
 app.include_router(scenarios_dynamic_router)
+app.include_router(zones_history_router)
