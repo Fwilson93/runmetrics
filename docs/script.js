@@ -220,10 +220,41 @@ async function renderZones(){
     await renderWeekly();
     await renderLoad();
     await renderScenarios();
-    await renderZones();
+    await renderZones();\n    await renderZoneEffort();
     await renderRecent();
   }catch(e){
     console.error(e);
     alert("Dashboard couldn't load API data. If Render was sleeping, refresh the page.");
   }
 })();
+
+async function renderZoneEffort(){
+  const data = await fetchJSON(`${API}/api/zone_effort?weeks=1`);
+  if(data.status !== "ok") return;
+
+  const zones = data.zones;
+  const order = ["Z1","Z2","Z3","Z4","Z5"];
+  const colors = {
+    Z1:"#4da3ff", Z2:"#3ddc97", Z3:"#ffcc66", Z4:"#ff6b6b", Z5:"#ff4dff"
+  };
+
+  const x = order.map(z => zones[z].minutes);
+  const y = order;
+
+  Plotly.newPlot("zones_plot", [{
+    type:"bar",
+    orientation:"h",
+    x,
+    y,
+    marker:{color: order.map(z => colors[z])},
+    text: order.map(z => `${Math.round(zones[z].fraction*100)}%`),
+    textposition:"outside"
+  }], {
+    ...PLOTLY_LAYOUT_COMMON,
+    xaxis:{title:"minutes"},
+    yaxis:{title:"zone"},
+  }, {responsive:true});
+
+  document.getElementById("zones_meta").textContent =
+    order.map(z => `${z}: ${zones[z].minutes} min (${Math.round(zones[z].fraction*100)}%)`).join(" · ");
+}

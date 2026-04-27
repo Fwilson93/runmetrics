@@ -36,3 +36,5 @@ app.include_router(streams_router)
 app.include_router(metrics_router)
 app.include_router(analytics_router)
 app.include_router(phys_router)
+from app.api.zone_effort import router as zone_effort_router
+app.include_router(zone_effort_router)
