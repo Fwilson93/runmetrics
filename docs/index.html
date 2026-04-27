@@ -62,7 +62,23 @@
 
   <footer class="small muted">
     ⚠️ Outstanding: migrate DB off Render free tier before 30‑day expiry.
-  </footer>
+  
+  <section class="card" id="zones_week_panel">
+    <h2>Time in HR zones (this week)</h2>
+    <div id="zones_week_plot" class="plot smallplot"></div>
+  </section>
+
+  <section class="card" id="zones_visual_panel">
+    <h2>HR zones (visual)</h2>
+    <p class="explain">
+      Coloured bands = current zones. Solid lines = current LT1/LT2/HRmax.
+      Faint dashed lines = values ~3 months ago.
+    </p>
+    <div id="zones_band_plot" class="plot smallplot"></div>
+    <div id="zones_band_note" class="small muted"></div>
+  </section>
+
+</footer>
 
   <!-- ✅ App JS -->
   <script src="script.js?v=1777284571"></script>

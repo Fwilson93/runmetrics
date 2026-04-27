@@ -193,3 +193,102 @@ function attachControls(){
     alert("Dashboard couldn't load API data. If Render was sleeping, refresh.");
   }
 })();
+
+/* RUNMETRICS_HR_PANELS_V1 */
+
+async function renderHRPanelsSafely() {
+  try {
+    const order = ["Z1","Z2","Z3","Z4","Z5"];
+    const colors = {
+      Z1:"#4da3ff",
+      Z2:"#3ddc97",
+      Z3:"#ffcc66",
+      Z4:"#ff6b6b",
+      Z5:"#ff4dff"
+    };
+
+    const DARK = {
+      paper_bgcolor:"#0f1117",
+      plot_bgcolor:"#0f1117",
+      font:{color:"#e9eef6"},
+      xaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
+      yaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
+      legend:{orientation:"h"},
+      margin:{t:20,r:10,l:30,b:40},
+    };
+
+    const zones = await fetchJSON(`${API}/api/zones`);
+    const zonesOld = await fetchJSON(`${API}/api/zones_history?days_ago=90`);
+    const week = await fetchJSON(`${API}/api/zone_effort?weeks=1`);
+
+    // ---- Time in zone (stacked bar)
+    if (week.status === "ok" && document.getElementById("zones_week_plot")) {
+      const mins = order.map(z => week.zones[z]?.minutes || 0);
+      const traces = order.map((z,i)=>({
+        type:"bar",
+        orientation:"h",
+        y:["This week"],
+        x:[mins[i]],
+        name:`${z} (${mins[i]} min)`,
+        marker:{color:colors[z]}
+      }));
+
+      Plotly.newPlot("zones_week_plot", traces, {
+        ...DARK,
+        barmode:"stack",
+        xaxis:{title:"minutes"},
+        yaxis:{visible:false},
+      }, {responsive:true});
+    }
+
+    // ---- Zones band
+    if (zones.status === "ok" && document.getElementById("zones_band_plot")) {
+      const shapes = [];
+
+      order.forEach(z=>{
+        const [lo,hi] = zones.zones[z];
+        shapes.push({
+          type:"rect", xref:"x", yref:"paper",
+          x0:lo, x1:hi, y0:0, y1:1,
+          fillcolor:colors[z]+"55", line:{width:0}
+        });
+      });
+
+      const addLine = (x, dash, width, opacity) => ({
+        type:"line", xref:"x", yref:"paper",
+        x0:x, x1:x, y0:0, y1:1,
+        line:{color:`rgba(233,238,246,${opacity})`, dash, width}
+      });
+
+      shapes.push(addLine(zones.lt1_hr,"solid",2,1));
+      shapes.push(addLine(zones.lt2_hr,"solid",2,1));
+      shapes.push(addLine(zones.hrmax,"dot",2,0.9));
+
+      if (zonesOld?.status === "ok") {
+        shapes.push(addLine(zonesOld.lt1_hr,"dash",1,0.5));
+        shapes.push(addLine(zonesOld.lt2_hr,"dash",1,0.5));
+      }
+
+      Plotly.newPlot("zones_band_plot", [{
+        x:[Math.max(80,0.55*zones.hrmax), zones.hrmax+5],
+        y:[0,0],
+        mode:"lines",
+        line:{color:"rgba(0,0,0,0)"},
+        showlegend:false
+      }], {
+        ...DARK,
+        shapes:shapes,
+        xaxis:{title:"Heart rate (bpm)"},
+        yaxis:{visible:false},
+      }, {responsive:true});
+
+      document.getElementById("zones_band_note").textContent =
+        `Current: LT1≈${zones.lt1_hr} · LT2≈${zones.lt2_hr} · HRmax≈${zones.hrmax}`;
+    }
+
+  } catch (err) {
+    console.warn("HR panels skipped:", err);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", renderHRPanelsSafely);
