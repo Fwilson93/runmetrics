@@ -31,20 +31,56 @@ def _hrmax_observed(activities):
     vals = [a.max_heartrate for a in activities if a.max_heartrate]
     return max(vals) if vals else 190.0
 
-def _load_proxy(a, hrmax):
+
+def _banister_trimp(duration_min: float, hr_avg: float, hr_rest: float, hr_max: float, sex: str = "male") -> float:
     """
-    Simple HR-based load proxy (not TRIMP).
-    - If HR present: duration_min * (avgHR/hrmax)^2 * 100
-    - If no HR: duration_min * 35 (low-confidence fallback)
+    Banister TRIMP (HR-reserve based):
+      TRIMP = duration_min * HRR * a * exp(b * HRR)
+    with sex-specific constants (male: a=0.64, b=1.92; female: a=0.86, b=1.67).
+    """
+    if duration_min <= 0 or hr_avg is None:
+        return 0.0
+    if hr_max <= hr_rest:
+        return 0.0
+    hrr = (float(hr_avg) - float(hr_rest)) / (float(hr_max) - float(hr_rest))
+    hrr = max(0.0, min(1.0, hrr))
+
+    sex = (sex or "male").lower()
+    if sex.startswith("f"):
+        a, b = 0.86, 1.67
+    else:
+        a, b = 0.64, 1.92
+
+    # uses math from module imports
+    return float(duration_min * hrr * a * math.exp(b * hrr))
+
+def _load_proxy(a, hrmax, hr_rest: float = 50.0, sex: str = "male"):
+    """
+    TRIMP-based load (primary) with conservative fallback when HR missing.
+
+    Returns: (load, used_hr)
+      - used_hr=True if avg HR was available
+      - used_hr=False if fallback estimate was used
     """
     if not a.moving_time_s:
         return 0.0, False
+
     dur_min = a.moving_time_s / 60.0
+
+    # Primary: use avg HR if present
     if a.average_heartrate and hrmax and hrmax > 0:
-        x = (a.average_heartrate / hrmax)
-        return dur_min * (x * x) * 100.0, True
-    else:
-        return dur_min * 35.0, False
+        tr = _banister_trimp(dur_min, float(a.average_heartrate), hr_rest, float(hrmax), sex)
+        return tr, True
+
+    # Fallback (no HR): assume easy aerobic HRR ~0.60, then scale down to be conservative
+    if hrmax and hrmax > hr_rest:
+        hr_avg_est = hr_rest + 0.60 * (float(hrmax) - float(hr_rest))
+        tr = _banister_trimp(dur_min, hr_avg_est, hr_rest, float(hrmax), sex)
+        return 0.60 * tr, False
+
+    # If hrmax unknown/unusable, return a low-confidence proxy (very conservative)
+    return 0.0, False
+
 
 def _ewma_series(daily_vals, tau_days):
     alpha = 1.0 - math.exp(-1.0 / float(tau_days))
