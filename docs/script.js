@@ -596,3 +596,204 @@ async function computeRunScale(){
     return 0.5;
   }
 }
+
+
+/* RM_RECOMMENDATION_EXPLAIN_V4_SAFE
+   - Does NOT move panels
+   - Reads the 'Recommended' row from #scenario_table
+   - Adds context from /api/load (42d) and optionally /api/zone_effort (weeks=1)
+   - Never throws; fails quietly and leaves existing text in place
+*/
+(function(){
+  function el(id){ return document.getElementById(id); }
+
+  async function fetchJSONSafe(url, timeoutMs){
+    const tMs = timeoutMs || 12000;
+    try{
+      const controller = new AbortController();
+      const t = setTimeout(()=>controller.abort(), tMs);
+      const r = await fetch(url, {signal: controller.signal});
+      clearTimeout(t);
+      if(!r.ok) return null;
+      return await r.json();
+    }catch(_e){
+      return null;
+    }
+  }
+
+  function findRecommendedText(){
+    const host = el("scenario_table");
+    if(!host) return null;
+    const rows = host.querySelectorAll("tr");
+    for(const r of rows){
+      const txt = (r.textContent || "").trim();
+      if(txt.toLowerCase().includes("recommended")) return txt;
+    }
+    return null;
+  }
+
+  function parseRec(recText){
+    const t = recText.toLowerCase();
+    const m = t.match(/(\d+)\s*min/);
+    const minutes = m ? parseInt(m[1], 10) : null;
+
+    let kind = "aerobic";
+    if(t.includes("rest")) kind = "rest";
+    else if(t.includes("tempo")) kind = "tempo";
+    else if(t.includes("steady")) kind = "steady";
+    else if(t.includes("z2") || t.includes("aerobic")) kind = "aerobic";
+
+    return {minutes, kind, raw: recText};
+  }
+
+  function computeContext(load42){
+    if(!load42 || !Array.isArray(load42.series) || load42.series.length < 14) return null;
+    const s = load42.series;
+    const last = s[s.length-1];
+
+    const sum = arr => arr.reduce((a,b)=>a+(b.daily_load||0),0);
+    const last7 = s.slice(-7);
+    const prev28 = s.length >= 35 ? s.slice(-35, -7) : [];
+
+    const last7Load = sum(last7);
+    const prev28Load = prev28.length ? sum(prev28) : null;
+    const prev28Weekly = (prev28Load !== null) ? (prev28Load/4.0) : null;
+
+    // days since last non-zero daily_load
+    let daysSince = null;
+    for(let i=s.length-1;i>=0;i--){
+      if((s[i].daily_load||0) > 0){
+        const d = new Date(s[i].date + "T00:00:00Z");
+        const now = new Date();
+        daysSince = Math.floor((now-d)/(24*3600*1000));
+        break;
+      }
+    }
+
+    return {
+      ctl: last.ctl, atl: last.atl, tsb: last.tsb,
+      last7Load: last7Load,
+      prev28Weekly: prev28Weekly,
+      daysSince: daysSince
+    };
+  }
+
+  function computeSkew(zoneEffort){
+    try{
+      if(!zoneEffort || zoneEffort.status !== "ok") return null;
+      const z = zoneEffort.zones;
+      const order = ["Z1","Z2","Z3","Z4","Z5"];
+      const mins = order.map(k => (z[k] && z[k].minutes) ? z[k].minutes : 0);
+      const tot = mins.reduce((a,b)=>a+b,0) || 1;
+      const frac = mins.map(m=>m/tot);
+      return {z2: frac[1], z3: frac[2], hard: frac[3]+frac[4]};
+    }catch(_e){
+      return null;
+    }
+  }
+
+  function buildWhy(rec, ctx, skew){
+    const linesIntensity = [];
+    const linesDuration = [];
+    const linesTrade = [];
+
+    if(ctx){
+      if(ctx.tsb < -15) linesIntensity.push("Freshness is low (you’re carrying fatigue), so the recommendation biases toward recoverable stimulus.");
+      else if(ctx.tsb < -5) linesIntensity.push("Freshness is slightly suppressed (mild fatigue), so intensity is chosen to stay productive without overreaching.");
+      else linesIntensity.push("Freshness is reasonable, so a normal training stimulus is appropriate.");
+    }
+
+    if(ctx && ctx.prev28Weekly !== null){
+      if(ctx.last7Load < 0.75*ctx.prev28Weekly){
+        linesDuration.push("Your last 7 days’ training load is below your recent baseline; the duration aims to rebuild consistency safely.");
+      } else if(ctx.last7Load > 1.15*ctx.prev28Weekly){
+        linesDuration.push("Your last 7 days’ load is high relative to baseline; the duration aims to avoid piling fatigue on top.");
+      } else {
+        linesDuration.push("Your recent weekly load is close to baseline; this duration provides a useful stimulus without unnecessary risk.");
+      }
+    } else {
+      linesDuration.push("The duration is selected to provide meaningful stimulus while remaining recoverable given your recent pattern.");
+    }
+
+    if(skew){
+      if(skew.z3 > 0.25) linesIntensity.push("This week has been more tempo‑weighted (Z3), so today’s choice leans toward controllable work.");
+      if(skew.hard > 0.12) linesIntensity.push("There’s been a fair share of higher intensity (Z4–Z5), so the recommendation consolidates rather than adds more stress.");
+      if(skew.z2 > 0.55) linesIntensity.push("You’re already skewed toward aerobic work (Z2), which supports base-building; this continues that safely.");
+    }
+
+    if(rec.kind === "rest"){
+      linesIntensity.push("Rest is recommended when additional training stress is unlikely to pay back today.");
+      linesTrade.push("Trade‑off: fitness does not increase today, but freshness improves faster, setting up higher‑quality sessions next.");
+    } else if(rec.kind === "aerobic"){
+      linesIntensity.push("Aerobic intensity builds cardiovascular/mitochondrial efficiency and durability at a relatively low fatigue cost.");
+      linesTrade.push("Trade‑off: minimal high‑intensity (Z4–Z5) stimulus today (more ‘base’ than ‘sharpening’).");
+    } else if(rec.kind === "steady"){
+      linesIntensity.push("Steady intensity develops aerobic strength while remaining sub‑threshold, balancing stimulus and fatigue.");
+      linesTrade.push("Trade‑off: more fatigue than easy aerobic, less top‑end stimulus than tempo/intervals.");
+    } else if(rec.kind === "tempo"){
+      linesIntensity.push("Tempo targets threshold‑adjacent adaptations and sustained strength when freshness allows.");
+      linesTrade.push("Trade‑off: higher fatigue cost — usually benefits from easier surrounding days.");
+    }
+
+    if(rec.minutes){
+      if(rec.minutes <= 35) linesDuration.push("A shorter duration reduces fatigue while maintaining the habit of training.");
+      else if(rec.minutes <= 70) linesDuration.push("This is long enough to generate aerobic stimulus without being a ‘big day’.");
+      else linesDuration.push("Longer duration emphasises durability; recover well after.");
+    }
+
+    return {
+      intensity: linesIntensity.join(" "),
+      duration: linesDuration.join(" "),
+      trade: linesTrade.join(" ")
+    };
+  }
+
+  async function updateExplain(){
+    const panel = el("recommendation_explain");
+    if(!panel) return;
+
+    const recText = findRecommendedText();
+    if(!recText) return;
+
+    const rec = parseRec(recText);
+
+    const load42 = await fetchJSONSafe(`${API}/api/load?days=42`, 12000);
+    const ctx = computeContext(load42);
+
+    const ze = await fetchJSONSafe(`${API}/api/zone_effort?weeks=1`, 12000);
+    const skew = computeSkew(ze);
+
+    const why = buildWhy(rec, ctx, skew);
+
+    panel.innerHTML = `
+      <h3>Why this is recommended</h3>
+      <p class="explain"><strong>Recommendation:</strong> ${rec.raw}</p>
+      <p class="explain"><strong>Why this intensity:</strong> ${why.intensity}</p>
+      <p class="explain"><strong>Why this duration:</strong> ${why.duration}</p>
+      <p class="explain"><strong>Trade‑off:</strong> ${why.trade}</p>
+      <p class="explain muted">Note: This is decision support based on recent load trends. Interpret directionally rather than as a precise physiological forecast.</p>
+    `;
+  }
+
+  function boot(){
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      updateExplain();
+      if(tries >= 15){
+        clearInterval(timer);
+        const host = el("scenario_table");
+        if(host){
+          const obs = new MutationObserver(() => { updateExplain(); });
+          obs.observe(host, {childList:true, subtree:true, characterData:true});
+        }
+      }
+    }, 250);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();

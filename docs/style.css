@@ -98,3 +98,18 @@ td.num,th.num{ text-align:right; font-variant-numeric: tabular-nums; }
   .plot{ height:460px; }
   .plot.tinyplot{ height:200px; }
 }
+
+
+/* RM_RECOMMENDATION_EXPLAIN_STYLE_V2 */
+#recommendation_explain h3 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+}
+#recommendation_explain .explain {
+  font-size: 1.02rem;
+  line-height: 1.55;
+  margin: 6px 0;
+}
+#recommendation_explain .muted {
+  color: var(--muted);
+}
