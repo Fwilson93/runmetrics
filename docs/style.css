@@ -113,3 +113,25 @@ td.num,th.num{ text-align:right; font-variant-numeric: tabular-nums; }
 #recommendation_explain .muted {
   color: var(--muted);
 }
+
+
+/* RM_BADGES_V1 */
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--muted);
+  font-size: 0.90rem;
+}
+.badge strong {
+  color: var(--fg);
+  font-weight: 600;
+}

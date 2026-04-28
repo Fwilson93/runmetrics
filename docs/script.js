@@ -205,7 +205,11 @@ async function renderMain(){
   document.getElementById("dur_lbl").textContent = dur;
 
   const hist = await fetchJSON(`${API}/api/load?days=90`);
-  const series = hist.series || [];
+  
+  /* RM_STORE_LOAD_V1 */
+  window._rm_last_load = hist;
+  window._rm_last_series = (hist && hist.series) ? hist.series : [];
+const series = hist.series || [];
 
   const xPast = series.map(p => p.date);
   const ctlPast = series.map(p => p.ctl);
@@ -704,3 +708,93 @@ async function computeRunScale(){
     boot();
   }
 })();
+
+
+/* RM_OVERLAYS_V1
+   Adds: HR assumptions + 7d/28d load context + weekly skew badge + projection assumption note.
+   No DOM movement. Safe if endpoints missing.
+*/
+async function rm_update_overlays(){
+  try{
+    const meta = document.getElementById("load_meta");
+    if(!meta) return;
+
+    const series = window._rm_last_series || [];
+    const loadObj = window._rm_last_load || {};
+
+    // compute 7d/28d averages from daily_load (if present)
+    const dl = series.map(p => (p.daily_load !== undefined ? (p.daily_load || 0) : 0));
+    const sum = arr => arr.reduce((a,b)=>a+b,0);
+
+    const last7 = dl.slice(-7);
+    const last28 = dl.slice(-28);
+    const s7 = last7.length ? sum(last7) : 0;
+    const s28 = last28.length ? sum(last28) : 0;
+
+    const avg7 = last7.length ? (s7/last7.length) : 0;
+    const avg28 = last28.length ? (s28/last28.length) : 0;
+
+    // HR assumptions if present
+    const hrmax = (loadObj.hrmax_observed !== undefined) ? loadObj.hrmax_observed : null;
+    const hrrest = (loadObj.hr_rest !== undefined) ? loadObj.hr_rest : null;
+    const sex = (loadObj.sex !== undefined) ? loadObj.sex : null;
+
+    // Build badge row
+    let badges = `<div class="badge-row">`;
+
+    badges += `<span class="badge"><strong>Load</strong> 7d avg ${avg7.toFixed(1)}/day (${s7.toFixed(0)}/wk)</span>`;
+    badges += `<span class="badge"><strong>Load</strong> 28d avg ${avg28.toFixed(1)}/day (${(s28/4).toFixed(0)}/wk)</span>`;
+
+    if(hrmax !== null || hrrest !== null || sex !== null){
+      const parts = [];
+      if(hrmax !== null) parts.push(`HRmax≈${Math.round(hrmax)}`);
+      if(hrrest !== null) parts.push(`HRrest≈${Math.round(hrrest)}`);
+      if(sex !== null) parts.push(`${sex}`);
+      badges += `<span class="badge"><strong>Assumptions</strong> ${parts.join(" · ")}</span>`;
+    }
+
+    // Optional weekly skew (safe)
+    try{
+      const ze = await fetchJSON(`${API}/api/zone_effort?weeks=1`);
+      if(ze && ze.status === "ok" && ze.zones){
+        const order = ["Z1","Z2","Z3","Z4","Z5"];
+        const mins = order.map(z => (ze.zones[z] && ze.zones[z].minutes) ? ze.zones[z].minutes : 0);
+        const tot = mins.reduce((a,b)=>a+b,0) || 1;
+        const z2 = mins[1]/tot;
+        const z3 = mins[2]/tot;
+        const hard = (mins[3]+mins[4])/tot;
+
+        let skew = "balanced";
+        if(z2 >= 0.55 && z3 < 0.25 && hard < 0.10) skew = "aerobic-heavy";
+        else if(z3 >= 0.25) skew = "tempo-weighted";
+        else if(hard >= 0.12) skew = "high-intensity present";
+
+        badges += `<span class="badge"><strong>Week skew</strong> ${skew}</span>`;
+      }
+    }catch(_e){}
+
+    badges += `</div>`;
+
+    // Projection assumption note (and slider=0 note)
+    const note = `<div class="muted" style="margin-top:8px;">
+      Projection assumes <strong>only the selected Custom workout tomorrow</strong>, then rest for the remaining days.
+      (To view a true no-workout scenario, use the <strong>Rest</strong> option rather than setting Custom to 0.)
+    </div>`;
+
+    meta.innerHTML = badges + note;
+
+  }catch(e){
+    console.warn("overlay update failed", e);
+  }
+}
+
+// wrap renderMain (if present) to update overlays after each render without touching its internals
+if(typeof renderMain === "function" && !window._rm_render_wrapped){
+  window._rm_render_wrapped = true;
+  const _rm_old = renderMain;
+  renderMain = async function(){
+    const r = await _rm_old();
+    await rm_update_overlays();
+    return r;
+  }
+}
