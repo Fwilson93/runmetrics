@@ -2,3 +2,10 @@
 .venv/
 __pycache__/
 *.pyc
+.env
+.env.local
+data/
+
+# Allow published site data
+!docs/data/
+!docs/data/*.json

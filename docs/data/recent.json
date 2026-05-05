@@ -1,0 +1,436 @@
+{
+  "status": "ok",
+  "generated_at": "2026-05-05T09:30:38.218796+00:00",
+  "items": [
+    {
+      "id": 18381460606,
+      "date": "2026-05-05T06:11:23+00:00",
+      "name": "Morning Run",
+      "sport_type": "Run",
+      "distance_km": 10.1827,
+      "pace_min_per_km": 4.553474684186578,
+      "avg_hr": 150.2,
+      "ef": 67.7942743009321
+    },
+    {
+      "id": 18341674841,
+      "date": "2026-05-02T06:09:14+00:00",
+      "name": "Morning Trail Run",
+      "sport_type": "TrailRun",
+      "distance_km": 14.7318,
+      "pace_min_per_km": 4.79914199215303,
+      "avg_hr": 156.2,
+      "ef": 94.31370038412292
+    },
+    {
+      "id": 18315502888,
+      "date": "2026-04-30T06:07:53+00:00",
+      "name": "Morning Run",
+      "sport_type": "Run",
+      "distance_km": 10.4674,
+      "pace_min_per_km": 4.521976167274905,
+      "avg_hr": 155.9,
+      "ef": 67.14175753688261
+    },
+    {
+      "id": 18288229600,
+      "date": "2026-04-28T06:35:32+00:00",
+      "name": "Morning Run",
+      "sport_type": "Run",
+      "distance_km": 9.296100000000001,
+      "pace_min_per_km": 4.557466751289967,
+      "avg_hr": 155.2,
+      "ef": 59.89755154639176
+    },
+    {
+      "id": 18247165171,
+      "date": "2026-04-25T06:00:15+00:00",
+      "name": "Morning Trail Run",
+      "sport_type": "TrailRun",
+      "distance_km": 9.3429,
+      "pace_min_per_km": 4.796868923638984,
+      "avg_hr": 158.8,
+      "ef": 58.83438287153652
+    },
+    {
+      "id": 18221468377,
+      "date": "2026-04-23T05:46:11+00:00",
+      "name": "Morning Run",
+      "sport_type": "Run",
+      "distance_km": 5.4139,
+      "pace_min_per_km": 4.482289415516848,
+      "avg_hr": 150.0,
+      "ef": 36.092666666666666
+    },
+    {
+      "id": 18127781369,
+      "date": "2026-04-16T05:55:29+00:00",
+      "name": "Morning Run",
+      "sport_type": "Run",
+      "distance_km": 4.6863,
+      "pace_min_per_km": 4.779890318588225,
+      "avg_hr": 145.5,
+      "ef": 32.208247422680415
+    },
+    {
+      "id": 18062144507,
+      "date": "2026-04-11T06:34:49+00:00",
+      "name": "Morning Run",
+      "sport_type": "Run",
+      "distance_km": 21.2087,
+      "pace_min_per_km": 4.439215982120545,
+      "avg_hr": 166.3,
+      "ef": 127.53277209861696
+    },
+    {
+      "id": 17994846938,
+      "date": "2026-04-06T06:23:07+00:00",
+      "name": "Tempo 4km",
+      "sport_type": "Run",
+      "distance_km": 6.0113,
+      "pace_min_per_km": 4.1726969762502835,
+      "avg_hr": 166.2,
+      "ef": 36.1690734055355
+    },
+    {
+      "id": 17946686662,
+      "date": "2026-04-02T07:00:14+00:00",
+      "name": "12km Hilly Progressive Repeat Long Run",
+      "sport_type": "Run",
+      "distance_km": 12.131,
+      "pace_min_per_km": 4.778391448905009,
+      "avg_hr": 155.9,
+      "ef": 77.81270044900577
+    },
+    {
+      "id": 17921098609,
+      "date": "2026-03-31T06:03:19+00:00",
+      "name": "8km Easy Run",
+      "sport_type": "Run",
+      "distance_km": 8.139,
+      "pace_min_per_km": 4.955563746570013,
+      "avg_hr": 145.8,
+      "ef": 55.82304526748971
+    },
+    {
+      "id": 17905523450,
+      "date": "2026-03-29T18:34:28+00:00",
+      "name": "Hill Repeats",
+      "sport_type": "Run",
+      "distance_km": 8.709100000000001,
+      "pace_min_per_km": 6.382213240556811,
+      "avg_hr": 141.9,
+      "ef": 61.37491190979563
+    },
+    {
+      "id": 17862870674,
+      "date": "2026-03-26T07:06:55+00:00",
+      "name": "16km Block Long Run",
+      "sport_type": "Run",
+      "distance_km": 16.5031,
+      "pace_min_per_km": 4.464817721115023,
+      "avg_hr": 166.9,
+      "ef": 98.8801677651288
+    },
+    {
+      "id": 17836773478,
+      "date": "2026-03-24T06:47:52+00:00",
+      "name": "9km Easy Run",
+      "sport_type": "Run",
+      "distance_km": 9.053,
+      "pace_min_per_km": 4.617253948967193,
+      "avg_hr": 158.1,
+      "ef": 57.261227071473755
+    },
+    {
+      "id": 17776021367,
+      "date": "2026-03-19T06:48:04+00:00",
+      "name": "19km Hilly Long Run",
+      "sport_type": "Run",
+      "distance_km": 20.293599999999998,
+      "pace_min_per_km": 4.961334279444423,
+      "avg_hr": 150.1,
+      "ef": 135.20053297801465
+    },
+    {
+      "id": 17750573231,
+      "date": "2026-03-17T06:53:54+00:00",
+      "name": "9km Easy Run",
+      "sport_type": "Run",
+      "distance_km": 9.089,
+      "pace_min_per_km": 4.896028165914842,
+      "avg_hr": 155.0,
+      "ef": 58.63870967741936
+    },
+    {
+      "id": 17735769758,
+      "date": "2026-03-15T18:45:14+00:00",
+      "name": "Over and Unders 1km",
+      "sport_type": "Run",
+      "distance_km": 8.1872,
+      "pace_min_per_km": 4.633248648296528,
+      "avg_hr": 160.1,
+      "ef": 51.13803872579638
+    },
+    {
+      "id": 17694200752,
+      "date": "2026-03-12T07:08:14+00:00",
+      "name": "17km Hilly Progressive Repeat Long Run",
+      "sport_type": "Run",
+      "distance_km": 21.563200000000002,
+      "pace_min_per_km": 4.9977121515668665,
+      "avg_hr": 155.7,
+      "ef": 138.49197174052668
+    },
+    {
+      "id": 17668949103,
+      "date": "2026-03-10T06:59:01+00:00",
+      "name": "8km Easy Run",
+      "sport_type": "Run",
+      "distance_km": 8.730799999999999,
+      "pace_min_per_km": 4.707472396573053,
+      "avg_hr": 158.1,
+      "ef": 55.223276407337124
+    },
+    {
+      "id": 17650132747,
+      "date": "2026-03-08T14:50:18+00:00",
+      "name": "5km Time Trial",
+      "sport_type": "Run",
+      "distance_km": 6.1086,
+      "pace_min_per_km": 4.561874515710091,
+      "avg_hr": 167.3,
+      "ef": 36.51285116557083
+    },
+    {
+      "id": 17609847031,
+      "date": "2026-03-05T06:57:23+00:00",
+      "name": "8km Long Run",
+      "sport_type": "Run",
+      "distance_km": 8.602,
+      "pace_min_per_km": 4.93877392854375,
+      "avg_hr": 149.6,
+      "ef": 57.5
+    },
+    {
+      "id": 17584545587,
+      "date": "2026-03-03T07:04:43+00:00",
+      "name": "7km Easy Run",
+      "sport_type": "Run",
+      "distance_km": 7.1296,
+      "pace_min_per_km": 4.736123578695392,
+      "avg_hr": 155.3,
+      "ef": 45.90856406954282
+    },
+    {
+      "id": 17567921658,
+      "date": "2026-03-01T16:28:59+00:00",
+      "name": "Rolling 300s",
+      "sport_type": "Run",
+      "distance_km": 9.0219,
+      "pace_min_per_km": 4.7791115692555515,
+      "avg_hr": 159.2,
+      "ef": 56.67022613065327
+    },
+    {
+      "id": 17527040946,
+      "date": "2026-02-26T06:52:10+00:00",
+      "name": "12km Progressive Long Run",
+      "sport_type": "Run",
+      "distance_km": 15.1742,
+      "pace_min_per_km": 4.65153572071894,
+      "avg_hr": 160.7,
+      "ef": 94.42563783447419
+    },
+    {
+      "id": 17502338915,
+      "date": "2026-02-24T06:47:42+00:00",
+      "name": "9km Easy Run",
+      "sport_type": "Run",
+      "distance_km": 9.0498,
+      "pace_min_per_km": 4.95406896653333,
+      "avg_hr": 142.8,
+      "ef": 63.37394957983192
+    },
+    {
+      "id": 17487188483,
+      "date": "2026-02-22T17:48:19+00:00",
+      "name": "Progressive Run",
+      "sport_type": "Run",
+      "distance_km": 8.0945,
+      "pace_min_per_km": 4.603949183602035,
+      "avg_hr": 159.5,
+      "ef": 50.74921630094044
+    },
+    {
+      "id": 17464131866,
+      "date": "2026-02-20T18:09:52+00:00",
+      "name": "10km Hilly Long Run",
+      "sport_type": "Run",
+      "distance_km": 11.526200000000001,
+      "pace_min_per_km": 4.835360598751829,
+      "avg_hr": 161.5,
+      "ef": 71.36965944272447
+    },
+    {
+      "id": 17453221688,
+      "date": "2026-02-19T17:58:57+00:00",
+      "name": "9km Easy Run",
+      "sport_type": "Run",
+      "distance_km": 9.0125,
+      "pace_min_per_km": 4.98566805362922,
+      "avg_hr": 144.4,
+      "ef": 62.41343490304709
+    },
+    {
+      "id": 17431056475,
+      "date": "2026-02-17T18:22:36+00:00",
+      "name": "1km Repeats",
+      "sport_type": "Run",
+      "distance_km": 6.754899999999999,
+      "pace_min_per_km": 4.443687792071929,
+      "avg_hr": 155.4,
+      "ef": 43.46782496782497
+    },
+    {
+      "id": 17406406552,
+      "date": "2026-02-15T13:33:12+00:00",
+      "name": "9km Hilly Progressive Long Run",
+      "sport_type": "Run",
+      "distance_km": 9.0214,
+      "pace_min_per_km": 4.518884725947931,
+      "avg_hr": 172.1,
+      "ef": 52.41952353282975
+    },
+    {
+      "id": 17373162379,
+      "date": "2026-02-12T12:24:20+00:00",
+      "name": "7.5km Easy Run",
+      "sport_type": "Run",
+      "distance_km": 7.5456,
+      "pace_min_per_km": 4.804124257845632,
+      "avg_hr": 167.7,
+      "ef": 44.994633273703045
+    },
+    {
+      "id": 17352672185,
+      "date": "2026-02-10T16:41:06+00:00",
+      "name": "Rolling 400s",
+      "sport_type": "Run",
+      "distance_km": 4.7313,
+      "pace_min_per_km": 4.776699849935536,
+      "avg_hr": 162.7,
+      "ef": 29.07990165949601
+    },
+    {
+      "id": 17305157685,
+      "date": "2026-02-06T11:38:21+00:00",
+      "name": "5km Easy Run",
+      "sport_type": "Run",
+      "distance_km": 5.0102,
+      "pace_min_per_km": 4.620574028980879,
+      "avg_hr": 167.5,
+      "ef": 29.911641791044776
+    },
+    {
+      "id": 17293776948,
+      "date": "2026-02-05T10:42:43+00:00",
+      "name": "5km Long Run",
+      "sport_type": "Run",
+      "distance_km": 5.0331,
+      "pace_min_per_km": 4.854529680183849,
+      "avg_hr": 163.4,
+      "ef": 30.80232558139535
+    },
+    {
+      "id": 17276212680,
+      "date": "2026-02-03T20:06:21+00:00",
+      "name": "4.5km Easy Run",
+      "sport_type": "Run",
+      "distance_km": 4.5221,
+      "pace_min_per_km": 4.916594797402387,
+      "avg_hr": 150.0,
+      "ef": 30.147333333333336
+    },
+    {
+      "id": 17251675178,
+      "date": "2026-02-01T15:16:30+00:00",
+      "name": "Tempo 2km Repeats",
+      "sport_type": "Run",
+      "distance_km": 7.0296,
+      "pace_min_per_km": 4.85802890633891,
+      "avg_hr": 142.3,
+      "ef": 49.39985945186226
+    },
+    {
+      "id": 17219767886,
+      "date": "2026-01-29T16:45:16+00:00",
+      "name": "7km Progressive Long Run",
+      "sport_type": "Run",
+      "distance_km": 7.0118,
+      "pace_min_per_km": 5.257803512174715,
+      "avg_hr": 157.0,
+      "ef": 44.661146496815284
+    },
+    {
+      "id": 17196969865,
+      "date": "2026-01-27T18:25:36+00:00",
+      "name": "6.5km Easy Run",
+      "sport_type": "Run",
+      "distance_km": 6.518,
+      "pace_min_per_km": 5.073130817224097,
+      "avg_hr": 151.0,
+      "ef": 43.16556291390729
+    },
+    {
+      "id": 17174073149,
+      "date": "2026-01-25T15:04:24+00:00",
+      "name": "Hill Repeats",
+      "sport_type": "Run",
+      "distance_km": 6.5995,
+      "pace_min_per_km": 6.0055054675859285,
+      "avg_hr": 149.3,
+      "ef": 44.20294708640321
+    },
+    {
+      "id": 17140195160,
+      "date": "2026-01-22T15:26:08+00:00",
+      "name": "7km Hilly Long Run",
+      "sport_type": "Run",
+      "distance_km": 8.1155,
+      "pace_min_per_km": 5.405294395498326,
+      "avg_hr": null,
+      "ef": null
+    },
+    {
+      "id": 17117534823,
+      "date": "2026-01-20T16:42:26+00:00",
+      "name": "5km Easy Run",
+      "sport_type": "Run",
+      "distance_km": 5.116,
+      "pace_min_per_km": 4.928980974719834,
+      "avg_hr": null,
+      "ef": null
+    },
+    {
+      "id": 17083241408,
+      "date": "2026-01-17T16:02:18+00:00",
+      "name": "5.5km Easy Run",
+      "sport_type": "Run",
+      "distance_km": 5.800800000000001,
+      "pace_min_per_km": 5.427412310945616,
+      "avg_hr": null,
+      "ef": null
+    },
+    {
+      "id": 17059573006,
+      "date": "2026-01-15T15:19:28+00:00",
+      "name": "Your First Walk Run Back",
+      "sport_type": "Run",
+      "distance_km": 5.277100000000001,
+      "pace_min_per_km": 4.844832704831567,
+      "avg_hr": null,
+      "ef": null
+    }
+  ]
+}

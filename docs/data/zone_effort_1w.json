@@ -1,0 +1,22 @@
+{
+  "status": "ok",
+  "generated_at": "2026-05-05T09:30:38.218039+00:00",
+  "days": 7,
+  "zones": {
+    "Z1": {
+      "minutes": 0
+    },
+    "Z2": {
+      "minutes": 164
+    },
+    "Z3": {
+      "minutes": 0
+    },
+    "Z4": {
+      "minutes": 0
+    },
+    "Z5": {
+      "minutes": 0
+    }
+  }
+}

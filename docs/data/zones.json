@@ -1,0 +1,8 @@
+{
+  "status": "ok",
+  "generated_at": "2026-05-05T09:30:38.218014+00:00",
+  "hrmax": 192.0,
+  "lt1_hr": 159.35999999999999,
+  "lt2_hr": 168.96,
+  "note": "Zone thresholds are heuristic fractions of observed HRmax for offline static publishing."
+}

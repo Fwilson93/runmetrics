@@ -135,3 +135,12 @@ td.num,th.num{ text-align:right; font-variant-numeric: tabular-nums; }
   color: var(--fg);
   font-weight: 600;
 }
+
+/* RM_INSIGHTS_STYLE_V1 */
+#activities_list ul{
+  padding-left:18px;
+  margin:6px 0;
+}
+#activities_list li{
+  margin:4px 0;
+}

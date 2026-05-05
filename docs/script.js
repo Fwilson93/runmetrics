@@ -1,13 +1,16 @@
-const API = "https://runmetrics.onrender.com";
-document.getElementById("api_url").textContent = API;
+/* RunMetrics static dashboard (GitHub Pages)
+   - Reads precomputed JSON from docs/data/*
+   - Performs scenario projections client-side
+*/
+const DATA = "./data";
 
 function fmt(x, dp=1){
   if(x === null || x === undefined || Number.isNaN(Number(x))) return "";
   return Number(x).toFixed(dp);
 }
 async function fetchJSON(url){
-  const r = await fetch(url);
-  if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+  const r = await fetch(url, { cache: "no-cache" });
+  if(!r.ok) throw new Error(`${r.status} ${r.statusText} for ${url}`);
   return r.json();
 }
 
@@ -17,10 +20,9 @@ const DARK = {
   font:{color:"#e9eef6"},
   xaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
   yaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
-  legend:{orientation:"h", font:{size:10}},
+  legend:{orientation:"h"},
   margin:{t:20,r:10,l:60,b:45},
 };
-
 const C = { ctl:"#6aa9ff", atl:"#ff6b6b", tsb:"#3ddc97" };
 
 function nextDatesFrom(lastIsoDate, n){
@@ -48,7 +50,6 @@ function recBadge(rec){
   const t = rec==="good" ? "✅ sensible" : (rec==="caution" ? "⚠️ caution" : "⛔ risky");
   return `<span style="display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid ${c};color:${c}">${t}</span>`;
 }
-
 function arrowFor(v){
   if(v > 1.0) return "↑";
   if(v < -1.0) return "↓";
@@ -65,50 +66,50 @@ function freshnessText(v){
   return "about the same";
 }
 
-function daysSinceLastTraining(loadSeries){
-  // loadSeries items have {date, daily_load, ctl, atl, tsb}
-  // Find last day with daily_load > 0
-  for (let i = loadSeries.length - 1; i >= 0; i--) {
-    if ((loadSeries[i].daily_load || 0) > 0) {
-      const d = new Date(loadSeries[i].date + "T00:00:00Z");
-      const now = new Date();
-      const diff = Math.floor((now - d) / (24*3600*1000));
-      return diff;
-    }
-  }
-  return 999;
+// CTL/ATL update form: prev + (x - prev)/tau
+function ewmaUpdate(prev, x, tau){
+  return prev + (x - prev) / tau;
 }
 
-function summariseSkew(weekZones){
-  const order = ["Z1","Z2","Z3","Z4","Z5"];
-  const mins = order.map(z => (weekZones[z]?.minutes ?? 0));
-  const total = mins.reduce((a,b)=>a+b,0) || 1;
-  const frac = mins.map(m => m/total);
-  const [z1,z2,z3,z4,z5] = frac;
-  const hard = z4 + z5;
-
-  if (z2 >= 0.55 && z3 < 0.25 && hard < 0.10) {
-    return "Skew: mostly aerobic (Z2). Likely supports aerobic durability/efficiency; may under‑stimulate high‑intensity (Z4–Z5) adaptations if sustained for many weeks.";
-  } else if (z3 >= 0.25) {
-    return "Skew: tempo‑heavy (Z3). Can build muscular endurance and threshold‑adjacent strength, but often carries fatigue—balance with more Z1–Z2 and keep Z4 sessions deliberate.";
-  } else if (hard >= 0.12) {
-    return "Skew: higher intensity (Z4–Z5). Supports VO₂/speed adaptations, but benefits most when backed by Z2 volume and adequate recovery.";
-  } else {
-    return "Skew: fairly balanced. Good general development; shift towards more Z2 for base phases or more Z4 for sharpening phases.";
+function simulateProjection(lastCtl, lastAtl, addLoadTomorrow, horizonDays, tauCtl=42, tauAtl=7){
+  let ctl = lastCtl;
+  let atl = lastAtl;
+  const outCtl = [];
+  const outAtl = [];
+  const outTsb = [];
+  for(let i=0;i<horizonDays;i++){
+    const x = (i===0) ? addLoadTomorrow : 0.0;
+    ctl = ewmaUpdate(ctl, x, tauCtl);
+    atl = ewmaUpdate(atl, x, tauAtl);
+    outCtl.push(ctl);
+    outAtl.push(atl);
+    outTsb.push(ctl - atl);
   }
+  return { ctl: outCtl, atl: outAtl, tsb: outTsb };
+}
+
+function estimateWorkoutLoad(durMin, intensity, hrmax){
+  // Mirror the same load scale as the Python proxy:
+  // duration_min * intensity^2 * 100
+  // intensity is treated as fraction of HRmax
+  return durMin * (intensity*intensity) * 100.0;
 }
 
 async function renderHRPanels(){
   const order = ["Z1","Z2","Z3","Z4","Z5"];
   const colors = { Z1:"#4da3ff", Z2:"#3ddc97", Z3:"#ffcc66", Z4:"#ff6b6b", Z5:"#ff4dff" };
 
-  const zones = await fetchJSON(`${API}/api/zones`);
-  const zonesOld = await fetchJSON(`${API}/api/zones_history?days_ago=90`);
-  const week = await fetchJSON(`${API}/api/zone_effort?weeks=1`);
+  let zones, week;
+  try{
+    zones = await fetchJSON(`${DATA}/zones.json`);
+    week = await fetchJSON(`${DATA}/zone_effort_1w.json`);
+  }catch(e){
+    console.warn("Zones unavailable:", e);
+    return;
+  }
 
-  // Weekly stacked bar
-  if (week.status === "ok") {
-    const mins = order.map(z => week.zones[z]?.minutes || 0);
+  if (week && week.status === "ok") {
+    const mins = order.map(z => (week.zones?.[z]?.minutes ?? 0));
     const traces = order.map((z,i)=>({
       type:"bar", orientation:"h",
       y:["This week"], x:[mins[i]],
@@ -119,173 +120,87 @@ async function renderHRPanels(){
       ...DARK,
       barmode:"stack",
       xaxis:{...DARK.xaxis, title:"minutes"},
-      yaxis:{visible:false},
       margin:{t:16,r:10,l:20,b:40}
-    }, {responsive:true});
-
-    document.getElementById("zones_global_skew").textContent = summariseSkew(week.zones);
+    }, {displayModeBar:false});
   }
 
-  // Zone band
-  if (zones.status === "ok") {
+  if (zones && zones.status === "ok") {
     const hrmax = zones.hrmax;
     const lt1 = zones.lt1_hr;
     const lt2 = zones.lt2_hr;
-
-    const shapes = [];
-    const annotations = [];
-
-    order.forEach(z => {
-      const [lo,hi] = zones.zones[z];
-      shapes.push({
-        type:"rect", xref:"x", yref:"paper",
-        x0:lo, x1:hi, y0:0, y1:1,
-        fillcolor: colors[z] + "55",
-        line:{width:0}
-      });
-
-      // Put zone label above, small font to avoid overlap
-      annotations.push({
-        x:(lo+hi)/2, y:1.08, xref:"x", yref:"paper",
-        text:`${z} ${Math.round(lo)}–${Math.round(hi)}`,
-        showarrow:false,
-        font:{color:"rgba(233,238,246,0.85)", size:10},
-        align:"center"
-      });
-    });
-
-    const addVLine = (x, label, dash, opacity, width=2) => {
-      shapes.push({
-        type:"line", xref:"x", yref:"paper",
-        x0:x, x1:x, y0:0, y1:1,
-        line:{color:`rgba(233,238,246,${opacity})`, dash, width}
-      });
-      annotations.push({
-        x:x, y:-0.12, xref:"x", yref:"paper",
-        text:label, showarrow:false,
-        font:{color:`rgba(233,238,246,${opacity})`, size:10},
-        align:"center"
-      });
-    };
-
-    addVLine(lt1, "LT1", "solid", 1.0, 2);
-    addVLine(lt2, "LT2", "solid", 1.0, 2);
-    addVLine(hrmax, "HRmax", "dot", 0.9, 2);
-
-    if (zonesOld && zonesOld.status === "ok") {
-      addVLine(zonesOld.lt1_hr, "LT1 (90d ago)", "dash", 0.55, 1);
-      addVLine(zonesOld.lt2_hr, "LT2 (90d ago)", "dash", 0.55, 1);
-      addVLine(zonesOld.hrmax, "HRmax (90d ago)", "dot", 0.40, 1);
+    const el = document.getElementById("hr_meta");
+    if(el){
+      el.innerHTML = `HRmax (observed/assumed): <strong>${Math.round(hrmax)}</strong> bpm · LT1≈ <strong>${Math.round(lt1)}</strong> · LT2≈ <strong>${Math.round(lt2)}</strong><br><span class="muted small">${zones.note ?? ""}</span>`;
     }
-
-    Plotly.newPlot("zones_band_plot", [{
-      x:[Math.max(80,0.55*hrmax), hrmax+5],
-      y:[0,0],
-      mode:"lines",
-      line:{color:"rgba(0,0,0,0)"},
-      showlegend:false
-    }], {
-      ...DARK,
-      shapes,
-      annotations,
-      xaxis:{...DARK.xaxis, title:"Heart rate (bpm)", range:[Math.max(80,0.55*hrmax), hrmax+5]},
-      yaxis:{visible:false},
-      margin:{t:32,r:10,l:20,b:58},
-      showlegend:false
-    }, {responsive:true});
-
-    document.getElementById("zones_band_note").textContent =
-      `Current: LT1≈${lt1} bpm · LT2≈${lt2} bpm · HRmax≈${hrmax} bpm (estimated from your data).`;
   }
 }
 
 async function renderMain(){
+  // Controls
   const dur = Number(document.getElementById("dur").value);
   const intensity = Number(document.getElementById("intensity_mode").value);
   document.getElementById("dur_lbl").textContent = dur;
 
-  const hist = await fetchJSON(`${API}/api/load?days=90`);
-  
-  /* RM_STORE_LOAD_V1 */
-  window._rm_last_load = hist;
-  window._rm_last_series = (hist && hist.series) ? hist.series : [];
-const series = hist.series || [];
+  // Load series (365 days) and slice last 90 for plot
+  const hist = await fetchJSON(`${DATA}/load_365.json`);
+  const series = hist.series ?? [];
 
-  const xPast = series.map(p => p.date);
-  const ctlPast = series.map(p => p.ctl);
-  const atlPast = series.map(p => p.atl);
-  const tsbPast = series.map(p => p.tsb);
+  const last90 = series.slice(Math.max(0, series.length - 90));
+  const xPast = last90.map(p => p.date);
+  const ctlPast = last90.map(p => p.ctl);
+  const atlPast = last90.map(p => p.atl);
+  const tsbPast = last90.map(p => p.tsb);
 
-  const lastDate = xPast[xPast.length - 1];
-  const lastCtl = ctlPast[ctlPast.length - 1];
-  const lastAtl = atlPast[atlPast.length - 1];
-  const lastTsb = tsbPast[tsbPast.length - 1];
+  const last = series[series.length - 1];
+  const lastDate = last.date;
+  const lastCtl = last.ctl;
+  const lastAtl = last.atl;
+  const lastTsb = last.tsb;
 
-  const scen = await fetchJSON(`${API}/api/scenarios_dynamic?days=7&dur_min=${dur}&intensity=${intensity}`);
-  if (scen.status !== "ok") throw new Error("scenarios_dynamic failed");
+  const xFut = nextDatesFrom(lastDate, 7);
+  const xProj = [lastDate, ...xFut];
 
-  // Identify scenarios
-  const rest = (scen.scenarios || []).find(s => s.name === "Rest");
-  const custom = (scen.scenarios || []).find(s => s.name === "Custom") || scen.scenarios[0];
+  // Scenario options
+  const hrmax = hist.hrmax ?? 190;
+  const restLoad = 0.0;
+  const customLoad = estimateWorkoutLoad(dur, intensity, hrmax);
 
-  // Recommended = best non-rest if available, else best overall
-  let recommended = scen.scenarios[0];
-  const bestNonRest = (scen.scenarios || []).find(s => s.name !== "Rest");
-  if (bestNonRest) recommended = bestNonRest;
+  const rest = simulateProjection(lastCtl, lastAtl, restLoad, 7);
+  const custom = simulateProjection(lastCtl, lastAtl, customLoad, 7);
 
-  // Recommended workout text
-  if (recommended.name === "Rest" || recommended.dur_min === 0) {
-    document.getElementById("rec_workout").textContent =
-      "Recommended tomorrow: Rest day (based on freshness projection).";
-  } else {
-    document.getElementById("rec_workout").textContent =
-      `Recommended tomorrow: ${Math.round(recommended.dur_min)} min at ${intensityLabel(recommended.intensity)} (~${Math.round(recommended.intensity*100)}% HRmax).`;
+  function deltas(proj){
+    const ctlF = proj.ctl[proj.ctl.length - 1];
+    const atlF = proj.atl[proj.atl.length - 1];
+    const tsbF = proj.tsb[proj.tsb.length - 1];
+    return { delta_ctl: ctlF - lastCtl, delta_atl: atlF - lastAtl, delta_tsb: tsbF - lastTsb, tsb_final: tsbF };
   }
 
-  // Table rows: Rest, Recommended(desc), Custom
-  const daysOff = daysSinceLastTraining(series);
-  const fatigueHigh = (scen.baseline && scen.baseline.tsb < -15) || (scen.baseline && scen.baseline.atl > 1.05*scen.baseline.ctl);
+  const dRest = deltas(rest);
+  const dCustom = deltas(custom);
 
-  function assessmentFor(option){
-    let rec = option.recommendation || "good";
-    if (option.name === "Rest" && daysOff > 2 && !fatigueHigh) {
-      rec = "caution";
-    }
-    return rec;
+  // Recommended: choose between Rest and Custom by best final TSB, but avoid very negative TSB
+  const recommended = (dCustom.tsb_final >= dRest.tsb_final) ? "Custom" : "Rest";
+  const recObj = (recommended === "Custom") ? dCustom : dRest;
+
+  function assessment(tsbFinal){
+    if (tsbFinal > -5) return "good";
+    if (tsbFinal > -15) return "caution";
+    return "risky";
   }
 
-  const rows = [];
-
-  if (rest) {
-    rows.push({
-      label:"Rest",
-      delta_ctl:rest.delta_ctl, delta_atl:rest.delta_atl, delta_tsb:rest.delta_tsb,
-      rec:assessmentFor(rest)
-    });
-  }
-
-  const recDesc = (recommended.name === "Rest" || recommended.dur_min === 0)
-    ? "Recommended (Rest)"
-    : `Recommended (${Math.round(recommended.dur_min)} min ${intensityLabel(recommended.intensity)})`;
-
-  rows.push({
-    label:recDesc,
-    delta_ctl:recommended.delta_ctl, delta_atl:recommended.delta_atl, delta_tsb:recommended.delta_tsb,
-    rec:assessmentFor(recommended)
-  });
-
-  rows.push({
-    label:"Custom",
-    delta_ctl:custom.delta_ctl, delta_atl:custom.delta_atl, delta_tsb:custom.delta_tsb,
-    rec:assessmentFor(custom)
-  });
+  // Table
+  const rows = [
+    { label:"Rest", d:dRest, rec:assessment(dRest.tsb_final) },
+    { label:(recommended==="Custom" ? `Recommended (${Math.round(dur)} min ${intensityLabel(intensity)})` : "Recommended (Rest)"), d:recObj, rec:assessment(recObj.tsb_final) },
+    { label:"Custom", d:dCustom, rec:assessment(dCustom.tsb_final) },
+  ];
 
   const tableRows = rows.map(r => `
     <tr>
       <td><strong>${r.label}</strong></td>
-      <td class="num">${arrowFor(r.delta_ctl)} <span class="muted">${fmt(r.delta_ctl,1)}</span></td>
-      <td>${fatigueText(r.delta_atl)} <span class="muted">(${fmt(r.delta_atl,1)})</span></td>
-      <td>${freshnessText(r.delta_tsb)} <span class="muted">(${fmt(r.delta_tsb,1)})</span></td>
+      <td class="num">${arrowFor(r.d.delta_ctl)} <span class="muted">${fmt(r.d.delta_ctl,1)}</span></td>
+      <td>${fatigueText(r.d.delta_atl)} <span class="muted">(${fmt(r.d.delta_atl,1)})</span></td>
+      <td>${freshnessText(r.d.delta_tsb)} <span class="muted">(${fmt(r.d.delta_tsb,1)})</span></td>
       <td>${recBadge(r.rec)}</td>
     </tr>
   `).join("");
@@ -310,491 +225,12 @@ const series = hist.series || [];
     </p>
   `;
 
-  // MAIN PLOT: past solid; ONLY custom projection
-  const xFut = nextDatesFrom(lastDate, 7);
-  const xProj = [lastDate, ...xFut];
+  // Plot: past + custom projection
   const withStart = (arr, startVal) => [startVal, ...arr];
 
   const traces = [
     {x:xPast,y:ctlPast,type:"scatter",mode:"lines",name:"Fitness (CTL) past",line:{color:C.ctl,width:3}},
     {x:xPast,y:atlPast,type:"scatter",mode:"lines",name:"Fatigue (ATL) past",line:{color:C.atl,width:3}},
     {x:xPast,y:tsbPast,type:"scatter",mode:"lines",name:"Form (TSB) past",line:{color:C.tsb,width:3}},
-  ];
-
-  traces.push({
-    x:xProj, y:withStart(custom.series.ctl, lastCtl),
-    type:"scatter", mode:"lines",
-    name:"CTL projection (your choice)",
-    line:{color:C.ctl, dash:"dashdot", width:2}, opacity:0.85
-  });
-  traces.push({
-    x:xProj, y:withStart(custom.series.atl, lastAtl),
-    type:"scatter", mode:"lines",
-    name:"ATL projection (your choice)",
-    line:{color:C.atl, dash:"dashdot", width:2}, opacity:0.85
-  });
-  traces.push({
-    x:xProj, y:withStart(custom.series.tsb, lastTsb),
-    type:"scatter", mode:"lines",
-    name:"TSB projection (your choice)",
-    line:{color:C.tsb, dash:"dashdot", width:2}, opacity:0.85
-  });
-
-  Plotly.newPlot("load_plot", traces, {
-    ...DARK,
-    yaxis:{...DARK.yaxis,title:"load units"},
-    xaxis:{...DARK.xaxis,title:"date"},
-  }, {responsive:true});
-
-  document.getElementById("load_meta").textContent =
-    `Showing last 90 days. Projection shown for your slider choice only.`;
-
-  // HR panels (non-blocking)
-  renderHRPanels().catch(err => console.warn("HR panels skipped:", err));
-}
-
-function attachControls(){
-  const dur = document.getElementById("dur");
-  const mode = document.getElementById("intensity_mode");
-  const rerender = () => renderMain().catch(console.error);
-  dur.addEventListener("input", rerender);
-  mode.addEventListener("change", rerender);
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  attachControls();
-  renderMain().catch(e => {
-    console.error(e);
-    alert("Dashboard couldn't load API data. If Render was sleeping, refresh.");
-  });
-});
-
-
-/* RM_LOCK_RECOMMENDED_V1
-   Purpose:
-   - Keep the Recommended row stable (does not change when sliders move).
-   - After the table first renders, set Custom sliders to a slightly more ambitious default.
-   - Does not modify your existing rendering logic; it only post-processes the DOM.
-*/
-(function(){
-  let cachedRecommendedHTML = null;
-  let ignoreObserver = false;
-
-  function findRecommendedRow(){
-    const host = document.getElementById("scenario_table");
-    if(!host) return null;
-    const rows = host.querySelectorAll("tr");
-    let recRow = null;
-    rows.forEach(r => {
-      const txt = (r.textContent || "").toLowerCase();
-      if(txt.includes("recommended")) recRow = r;
-    });
-    return recRow;
-  }
-
-  function cacheOrRestoreRecommended(){
-    const recRow = findRecommendedRow();
-    if(!recRow) return false;
-
-    // cache first time
-    if(cachedRecommendedHTML === null){
-      cachedRecommendedHTML = recRow.innerHTML;
-      return true;
-    }
-
-    // restore if it changed
-    if(recRow.innerHTML !== cachedRecommendedHTML){
-      ignoreObserver = true;
-      recRow.innerHTML = cachedRecommendedHTML;
-      ignoreObserver = false;
-    }
-    return true;
-  }
-
-  function setAmbitiousCustomDefaults(){
-    const durEl = document.getElementById("dur");
-    const intEl = document.getElementById("intensity_mode");
-    if(!durEl || !intEl) return;
-
-    // Use current slider values as baseline (these typically match the initial recommended state)
-    let dur = parseInt(durEl.value || "45", 10);
-    let inten = parseFloat(intEl.value || "0.65");
-
-    // Slightly more ambitious but sensible:
-    // - If aerobic-ish, add +15 min duration (cap 90).
-    // - Else bump intensity one notch (cap ~0.80), keep duration.
-    if(inten <= 0.65){
-      dur = Math.min(dur + 15, 90);
-    } else {
-      const opts = Array.from(intEl.options).map(o => parseFloat(o.value)).sort((a,b)=>a-b);
-      const next = opts.find(v => v > inten && v <= 0.80);
-      inten = (next !== undefined) ? next : Math.min(inten + 0.03, 0.80);
-    }
-
-    // snap duration to 5 min steps
-    durEl.value = String(Math.round(dur/5)*5);
-    // snap intensity to the select’s value format
-    intEl.value = inten.toFixed(2);
-
-    const durLbl = document.getElementById("dur_lbl");
-    if(durLbl) durLbl.textContent = durEl.value;
-
-    // Trigger your existing render logic
-    durEl.dispatchEvent(new Event("input", { bubbles:true }));
-    intEl.dispatchEvent(new Event("change", { bubbles:true }));
-  }
-
-  function boot(){
-    const host = document.getElementById("scenario_table");
-    if(!host) return;
-
-    // Wait until table is rendered once, then cache recommended and set defaults.
-    let tries = 0;
-    const timer = setInterval(() => {
-      tries += 1;
-      const ok = cacheOrRestoreRecommended();
-      if(ok){
-        clearInterval(timer);
-
-        // Observe future changes and keep recommended stable
-        const obs = new MutationObserver(() => {
-          if(ignoreObserver) return;
-          cacheOrRestoreRecommended();
-        });
-        obs.observe(host, { childList:true, subtree:true, characterData:true });
-
-        // After caching recommended, make custom a bit more ambitious
-        setTimeout(setAmbitiousCustomDefaults, 80);
-      }
-      if(tries > 60) clearInterval(timer); // give up after ~12s
-    }, 200);
-  }
-
-  if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
-})();
-
-
-/* RM_RUNNING_LOAD_CALIBRATION_V1
-   Calibrate a running-specific load scale from recent history.
-   Applied ONLY to projections (not past CTL).
-*/
-async function computeRunScale(){
-  try{
-    const hist = await fetchJSON(`${API}/api/load?days=56`);
-    const s = hist.series || [];
-    if(s.length < 14) return 0.5; // fallback
-
-    // realised CTL ramp
-    const ctl_start = s[0].ctl;
-    const ctl_end = s[s.length-1].ctl;
-    const weeks = s.length / 7.0;
-    const realised_per_week = (ctl_end - ctl_start) / weeks;
-
-    // plausible running ramp (centre of typical sustainable range)
-    const target_per_week = Math.max(2.5, Math.min(7.0, realised_per_week));
-
-    // model ramp implied by raw load (protect against divide-by-zero)
-    const model_per_week = realised_per_week !== 0 ? realised_per_week : 5.0;
-
-    const k = target_per_week / model_per_week;
-    return Math.max(0.25, Math.min(1.0, k));
-  }catch(e){
-    console.warn("Run scale calibration failed; using fallback", e);
-    return 0.5;
-  }
-}
-
-
-/* RM_RECOMMENDATION_EXPLAIN_V4_SAFE
-   - Does NOT move panels
-   - Reads the 'Recommended' row from #scenario_table
-   - Adds context from /api/load (42d) and optionally /api/zone_effort (weeks=1)
-   - Never throws; fails quietly and leaves existing text in place
-*/
-(function(){
-  function el(id){ return document.getElementById(id); }
-
-  async function fetchJSONSafe(url, timeoutMs){
-    const tMs = timeoutMs || 12000;
-    try{
-      const controller = new AbortController();
-      const t = setTimeout(()=>controller.abort(), tMs);
-      const r = await fetch(url, {signal: controller.signal});
-      clearTimeout(t);
-      if(!r.ok) return null;
-      return await r.json();
-    }catch(_e){
-      return null;
-    }
-  }
-
-  function findRecommendedText(){
-    const host = el("scenario_table");
-    if(!host) return null;
-    const rows = host.querySelectorAll("tr");
-    for(const r of rows){
-      const txt = (r.textContent || "").trim();
-      if(txt.toLowerCase().includes("recommended")) return txt;
-    }
-    return null;
-  }
-
-  function parseRec(recText){
-    const t = recText.toLowerCase();
-    const m = t.match(/(\d+)\s*min/);
-    const minutes = m ? parseInt(m[1], 10) : null;
-
-    let kind = "aerobic";
-    if(t.includes("rest")) kind = "rest";
-    else if(t.includes("tempo")) kind = "tempo";
-    else if(t.includes("steady")) kind = "steady";
-    else if(t.includes("z2") || t.includes("aerobic")) kind = "aerobic";
-
-    return {minutes, kind, raw: recText};
-  }
-
-  function computeContext(load42){
-    if(!load42 || !Array.isArray(load42.series) || load42.series.length < 14) return null;
-    const s = load42.series;
-    const last = s[s.length-1];
-
-    const sum = arr => arr.reduce((a,b)=>a+(b.daily_load||0),0);
-    const last7 = s.slice(-7);
-    const prev28 = s.length >= 35 ? s.slice(-35, -7) : [];
-
-    const last7Load = sum(last7);
-    const prev28Load = prev28.length ? sum(prev28) : null;
-    const prev28Weekly = (prev28Load !== null) ? (prev28Load/4.0) : null;
-
-    // days since last non-zero daily_load
-    let daysSince = null;
-    for(let i=s.length-1;i>=0;i--){
-      if((s[i].daily_load||0) > 0){
-        const d = new Date(s[i].date + "T00:00:00Z");
-        const now = new Date();
-        daysSince = Math.floor((now-d)/(24*3600*1000));
-        break;
-      }
-    }
-
-    return {
-      ctl: last.ctl, atl: last.atl, tsb: last.tsb,
-      last7Load: last7Load,
-      prev28Weekly: prev28Weekly,
-      daysSince: daysSince
-    };
-  }
-
-  function computeSkew(zoneEffort){
-    try{
-      if(!zoneEffort || zoneEffort.status !== "ok") return null;
-      const z = zoneEffort.zones;
-      const order = ["Z1","Z2","Z3","Z4","Z5"];
-      const mins = order.map(k => (z[k] && z[k].minutes) ? z[k].minutes : 0);
-      const tot = mins.reduce((a,b)=>a+b,0) || 1;
-      const frac = mins.map(m=>m/tot);
-      return {z2: frac[1], z3: frac[2], hard: frac[3]+frac[4]};
-    }catch(_e){
-      return null;
-    }
-  }
-
-  function buildWhy(rec, ctx, skew){
-    const linesIntensity = [];
-    const linesDuration = [];
-    const linesTrade = [];
-
-    if(ctx){
-      if(ctx.tsb < -15) linesIntensity.push("Freshness is low (you’re carrying fatigue), so the recommendation biases toward recoverable stimulus.");
-      else if(ctx.tsb < -5) linesIntensity.push("Freshness is slightly suppressed (mild fatigue), so intensity is chosen to stay productive without overreaching.");
-      else linesIntensity.push("Freshness is reasonable, so a normal training stimulus is appropriate.");
-    }
-
-    if(ctx && ctx.prev28Weekly !== null){
-      if(ctx.last7Load < 0.75*ctx.prev28Weekly){
-        linesDuration.push("Your last 7 days’ training load is below your recent baseline; the duration aims to rebuild consistency safely.");
-      } else if(ctx.last7Load > 1.15*ctx.prev28Weekly){
-        linesDuration.push("Your last 7 days’ load is high relative to baseline; the duration aims to avoid piling fatigue on top.");
-      } else {
-        linesDuration.push("Your recent weekly load is close to baseline; this duration provides a useful stimulus without unnecessary risk.");
-      }
-    } else {
-      linesDuration.push("The duration is selected to provide meaningful stimulus while remaining recoverable given your recent pattern.");
-    }
-
-    if(skew){
-      if(skew.z3 > 0.25) linesIntensity.push("This week has been more tempo‑weighted (Z3), so today’s choice leans toward controllable work.");
-      if(skew.hard > 0.12) linesIntensity.push("There’s been a fair share of higher intensity (Z4–Z5), so the recommendation consolidates rather than adds more stress.");
-      if(skew.z2 > 0.55) linesIntensity.push("You’re already skewed toward aerobic work (Z2), which supports base-building; this continues that safely.");
-    }
-
-    if(rec.kind === "rest"){
-      linesIntensity.push("Rest is recommended when additional training stress is unlikely to pay back today.");
-      linesTrade.push("Trade‑off: fitness does not increase today, but freshness improves faster, setting up higher‑quality sessions next.");
-    } else if(rec.kind === "aerobic"){
-      linesIntensity.push("Aerobic intensity builds cardiovascular/mitochondrial efficiency and durability at a relatively low fatigue cost.");
-      linesTrade.push("Trade‑off: minimal high‑intensity (Z4–Z5) stimulus today (more ‘base’ than ‘sharpening’).");
-    } else if(rec.kind === "steady"){
-      linesIntensity.push("Steady intensity develops aerobic strength while remaining sub‑threshold, balancing stimulus and fatigue.");
-      linesTrade.push("Trade‑off: more fatigue than easy aerobic, less top‑end stimulus than tempo/intervals.");
-    } else if(rec.kind === "tempo"){
-      linesIntensity.push("Tempo targets threshold‑adjacent adaptations and sustained strength when freshness allows.");
-      linesTrade.push("Trade‑off: higher fatigue cost — usually benefits from easier surrounding days.");
-    }
-
-    if(rec.minutes){
-      if(rec.minutes <= 35) linesDuration.push("A shorter duration reduces fatigue while maintaining the habit of training.");
-      else if(rec.minutes <= 70) linesDuration.push("This is long enough to generate aerobic stimulus without being a ‘big day’.");
-      else linesDuration.push("Longer duration emphasises durability; recover well after.");
-    }
-
-    return {
-      intensity: linesIntensity.join(" "),
-      duration: linesDuration.join(" "),
-      trade: linesTrade.join(" ")
-    };
-  }
-
-  async function updateExplain(){
-    const panel = el("recommendation_explain");
-    if(!panel) return;
-
-    const recText = findRecommendedText();
-    if(!recText) return;
-
-    const rec = parseRec(recText);
-
-    const load42 = await fetchJSONSafe(`${API}/api/load?days=42`, 12000);
-    const ctx = computeContext(load42);
-
-    const ze = await fetchJSONSafe(`${API}/api/zone_effort?weeks=1`, 12000);
-    const skew = computeSkew(ze);
-
-    const why = buildWhy(rec, ctx, skew);
-
-    panel.innerHTML = `
-      <h3>Why this is recommended</h3>
-      <p class="explain"><strong>Recommendation:</strong> ${rec.raw}</p>
-      <p class="explain"><strong>Why this intensity:</strong> ${why.intensity}</p>
-      <p class="explain"><strong>Why this duration:</strong> ${why.duration}</p>
-      <p class="explain"><strong>Trade‑off:</strong> ${why.trade}</p>
-      <p class="explain muted">Note: This is decision support based on recent load trends. Interpret directionally rather than as a precise physiological forecast.</p>
-    `;
-  }
-
-  function boot(){
-    let tries = 0;
-    const timer = setInterval(() => {
-      tries += 1;
-      updateExplain();
-      if(tries >= 15){
-        clearInterval(timer);
-        const host = el("scenario_table");
-        if(host){
-          const obs = new MutationObserver(() => { updateExplain(); });
-          obs.observe(host, {childList:true, subtree:true, characterData:true});
-        }
-      }
-    }, 250);
-  }
-
-  if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
-})();
-
-
-/* RM_OVERLAYS_V1
-   Adds: HR assumptions + 7d/28d load context + weekly skew badge + projection assumption note.
-   No DOM movement. Safe if endpoints missing.
-*/
-async function rm_update_overlays(){
-  try{
-    const meta = document.getElementById("load_meta");
-    if(!meta) return;
-
-    const series = window._rm_last_series || [];
-    const loadObj = window._rm_last_load || {};
-
-    // compute 7d/28d averages from daily_load (if present)
-    const dl = series.map(p => (p.daily_load !== undefined ? (p.daily_load || 0) : 0));
-    const sum = arr => arr.reduce((a,b)=>a+b,0);
-
-    const last7 = dl.slice(-7);
-    const last28 = dl.slice(-28);
-    const s7 = last7.length ? sum(last7) : 0;
-    const s28 = last28.length ? sum(last28) : 0;
-
-    const avg7 = last7.length ? (s7/last7.length) : 0;
-    const avg28 = last28.length ? (s28/last28.length) : 0;
-
-    // HR assumptions if present
-    const hrmax = (loadObj.hrmax_observed !== undefined) ? loadObj.hrmax_observed : null;
-    const hrrest = (loadObj.hr_rest !== undefined) ? loadObj.hr_rest : null;
-    const sex = (loadObj.sex !== undefined) ? loadObj.sex : null;
-
-    // Build badge row
-    let badges = `<div class="badge-row">`;
-
-    badges += `<span class="badge"><strong>Load</strong> 7d avg ${avg7.toFixed(1)}/day (${s7.toFixed(0)}/wk)</span>`;
-    badges += `<span class="badge"><strong>Load</strong> 28d avg ${avg28.toFixed(1)}/day (${(s28/4).toFixed(0)}/wk)</span>`;
-
-    if(hrmax !== null || hrrest !== null || sex !== null){
-      const parts = [];
-      if(hrmax !== null) parts.push(`HRmax≈${Math.round(hrmax)}`);
-      if(hrrest !== null) parts.push(`HRrest≈${Math.round(hrrest)}`);
-      if(sex !== null) parts.push(`${sex}`);
-      badges += `<span class="badge"><strong>Assumptions</strong> ${parts.join(" · ")}</span>`;
-    }
-
-    // Optional weekly skew (safe)
-    try{
-      const ze = await fetchJSON(`${API}/api/zone_effort?weeks=1`);
-      if(ze && ze.status === "ok" && ze.zones){
-        const order = ["Z1","Z2","Z3","Z4","Z5"];
-        const mins = order.map(z => (ze.zones[z] && ze.zones[z].minutes) ? ze.zones[z].minutes : 0);
-        const tot = mins.reduce((a,b)=>a+b,0) || 1;
-        const z2 = mins[1]/tot;
-        const z3 = mins[2]/tot;
-        const hard = (mins[3]+mins[4])/tot;
-
-        let skew = "balanced";
-        if(z2 >= 0.55 && z3 < 0.25 && hard < 0.10) skew = "aerobic-heavy";
-        else if(z3 >= 0.25) skew = "tempo-weighted";
-        else if(hard >= 0.12) skew = "high-intensity present";
-
-        badges += `<span class="badge"><strong>Week skew</strong> ${skew}</span>`;
-      }
-    }catch(_e){}
-
-    badges += `</div>`;
-
-    // Projection assumption note (and slider=0 note)
-    const note = `<div class="muted" style="margin-top:8px;">
-      Projection assumes <strong>only the selected Custom workout tomorrow</strong>, then rest for the remaining days.
-      (To view a true no-workout scenario, use the <strong>Rest</strong> option rather than setting Custom to 0.)
-    </div>`;
-
-    meta.innerHTML = badges + note;
-
-  }catch(e){
-    console.warn("overlay update failed", e);
-  }
-}
-
-// wrap renderMain (if present) to update overlays after each render without touching its internals
-if(typeof renderMain === "function" && !window._rm_render_wrapped){
-  window._rm_render_wrapped = true;
-  const _rm_old = renderMain;
-  renderMain = async function(){
-    const r = await _rm_old();
-    await rm_update_overlays();
-    return r;
-  }
-}
+    {x:xProj,y:withStart(custom.ctl, lastCtl),type:"scatter",mode:"lines",name:"CTL projection (your choice)",line:{color:C.ctl, dash:"dashdot", width:2},opacity:0.85},
+    {x:xProj,y:withStart(custom.atl, lastAtl),type:"scatter",mode:"lines",name:"ATL projection (your choice)",line:{color:C.at
