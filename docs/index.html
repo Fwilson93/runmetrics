@@ -95,3 +95,42 @@
 </body>
 </html>
 
+
+<!-- RunMetrics inline static renderer (minimal, no deps) -->
+<section class="card">
+  <h2>Recent activities</h2>
+  <div id="rm_recent">Loading activities…</div>
+</section>
+
+<script>
+(function(){
+  var base = window.location.origin + window.location.pathname.replace(/\/$/, "");
+  var url = base + "/data/recent.json";
+
+  fetch(url, { cache: "no-store" })
+    .then(function(r){
+      if(!r.ok) throw new Error(r.status + " " + r.statusText);
+      return r.json();
+    })
+    .then(function(j){
+      var el = document.getElementById("rm_recent");
+      el.innerHTML = j.items.map(function(a){
+        var hr = (a.avg_hr === null || a.avg_hr === undefined) ? "–" : a.avg_hr;
+        return (
+          "<div style='margin-bottom:6px'>" +
+          "<strong>" + a.date.slice(0,10) + "</strong> — " + a.name +
+          " <span style='color:#888'>(" +
+          a.distance_km.toFixed(1) + " km, " +
+          a.pace_min_per_km.toFixed(2) + " min/km, HR " + hr +
+          ")</span></div>"
+        );
+      }).join("");
+    })
+    .catch(function(err){
+      console.error(err);
+      document.getElementById("rm_recent").textContent =
+        "Failed to load recent activities (see console).";
+    });
+})();
+</script>
+
