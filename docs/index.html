@@ -1,302 +1,84 @@
-<!DOCTYPE html>
-
+<!doctype html>
 <html lang="en-GB">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<title>RunMetrics</title>
-<link href="style.css" rel="stylesheet"/>
-<script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>RunMetrics</title>
+
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
 </head>
 <body>
-<header class="top">
-<div>
-<h1>🏃 RunMetrics</h1>
-<div class="sub">Solid history + simple projected futures</div>
-<div class="small muted">Backend: <span id="api_url"></span></div>
-</div>
-</header>
-<section class="card">
-<h2>Fitness / fatigue / form (past + projected)</h2>
-<p class="explain">
-<strong>Fitness (CTL)</strong>: long‑term load (how fit you’re becoming).<br/>
-<strong>Fatigue (ATL)</strong>: short‑term load (how tired you are now).<br/>
-<strong>Form (TSB)</strong> = CTL − ATL (freshness).
+  <header class="top">
+    <div>
+      <h1>🏃 RunMetrics</h1>
+      <div class="sub">Solid history + simple projected futures</div>
+      <div class="small muted">Backend: <span id="api_url"></span></div>
+    </div>
+  </header>
+
+  <section class="card">
+    <h2>Fitness / fatigue / form (past + projected)</h2>
+    <p class="explain">
+      <strong>Fitness (CTL)</strong>: long‑term load (how fit you’re becoming).<br>
+      <strong>Fatigue (ATL)</strong>: short‑term load (how tired you are now).<br>
+      <strong>Form (TSB)</strong> = CTL − ATL (freshness).
       <span class="muted">Past = solid. Projection = your slider choice (dash‑dot).</span>
-</p>
-<div class="small muted" id="rec_workout"></div>
-<div class="plot" id="load_plot"></div>
-<div class="small muted" id="load_meta"></div>
-</section>
-<section class="card">
-<h2>What if I train tomorrow?</h2>
-<p class="explain">
+    </p>
+    <div id="rec_workout" class="small muted"></div>
+    <div id="load_plot" class="plot"></div>
+    <div id="load_meta" class="small muted"></div>
+  </section>
+
+  <section class="card">
+    <h2>What if I train tomorrow?</h2>
+    <p class="explain">
       Adjust duration/intensity. The ranked table updates, and the long‑term plot above shows the next‑week projection for your choice.
     </p>
-<div class="controls">
-<label>
+    <div class="controls">
+      <label>
         Duration: <span id="dur_lbl"></span> min
-        <input id="dur" max="180" min="5" step="5" type="range" value="45"/>
-</label>
-<label>
+        <input id="dur" type="range" min="0" max="180" step="5" value="45">
+      </label>
+
+      <label>
         Intensity
         <select id="intensity_mode">
-<option value="0.50">Easy jog</option>
-<option value="0.60">Easy aerobic</option>
-<option selected="" value="0.65">Aerobic (Z2)</option>
-<option value="0.72">Steady</option>
-<option value="0.80">Tempo</option>
-<option value="0.88">Hard</option>
-</select>
-</label>
-</div>
-<div class="small" id="scenario_table"></div>
-</section><section class="card subtle" id="recommendation_explain"></section>
-<!-- HR panels: compact side-by-side -->
-<section class="grid-two" id="hr_grid">
-<section class="card compact" id="zones_week_panel">
-<h3>Time in HR zones (this week)</h3>
-<div class="plot tinyplot" id="zones_week_plot"></div>
-</section>
-<section class="card compact" id="zones_visual_panel">
-<h3>HR zones</h3>
-<div class="plot tinyplot" id="zones_band_plot"></div>
-<div class="small muted" id="zones_band_note"></div>
-</section>
-</section>
-<!-- Full-width skew line below both panels -->
-<section class="card subtle" id="zones_global_skew"></section>
-<footer class="small muted">
+          <option value="0.50">Easy jog</option>
+          <option value="0.60">Easy aerobic</option>
+          <option value="0.65" selected>Aerobic (Z2)</option>
+          <option value="0.72">Steady</option>
+          <option value="0.80">Tempo</option>
+          <option value="0.88">Hard</option>
+        </select>
+      </label>
+    </div>
+    <div id="scenario_table" class="small"></div>
+  </section>
+
+  <!-- HR panels: compact side-by-side -->
+  <section class="grid-two" id="hr_grid">
+    <section class="card compact" id="zones_week_panel">
+      <h3>Time in HR zones (this week)</h3>
+      <div id="zones_week_plot" class="plot tinyplot"></div>
+    </section>
+
+    <section class="card compact" id="zones_visual_panel">
+      <h3>HR zones</h3>
+      <div id="zones_band_plot" class="plot tinyplot"></div>
+      <div id="zones_band_note" class="small muted"></div>
+    </section>
+  </section>
+
+  <!-- Full-width skew line below both panels -->
+  <section class="card subtle" id="zones_global_skew"></section>
+
+  <footer class="small muted">
     ⚠️ Outstanding: migrate DB off Render free tier before 30‑day expiry.
   </footer>
 
-
-<section class="card" id="training_insights">
-  <h2>Training insights</h2>
-  <p class="explain">Contextual checks on recent training load and session mix (informational only).</p>
-  <div id="insights_content" class="small muted">Loading insights…</div>
-</section>
-
-
-<section class="card" id="recent_activities">
-  <h2>Recent activities</h2>
-  <div id="activities_list" class="small muted">Loading activities…</div>
-</section>
-
-
-<section class="card">
-  <h2>Recent activities</h2>
-  <div id="recent_list">Loading activities…</div>
-</section>
-
-<section class="card subtle">
-  <div id="load_meta">Loading training summary…</div>
-</section>
-
-<script>
-(function(){
-  const BASE = window.location.origin + window.location.pathname.replace(/\/, "");
-  const DATA = BASE + "/data";
-
-  function fetchJSON(p){
-    return fetch(p, {cache:"no-store"}).then(r=>{
-      if(!r.ok) throw new Error(r.status+" "+r.statusText);
-      return r.json();
-    });
-  }
-
-  // ---- CTL / ATL / TSB plot ----
-  fetchJSON(DATA + "/load_365.json").then(j=>{
-    const s = j.series.slice(-120);
-    const x = s.map(p=>p.date);
-    const ctl = s.map(p=>p.ctl);
-    const atl = s.map(p=>p.atl);
-    const tsb = s.map(p=>p.tsb);
-
-    Plotly.newPlot(
-      "load_plot",
-      [
-        {x,y:ctl,name:"CTL",mode:"lines",line:{color:"#6aa9ff",width:3}},
-        {x,y:atl,name:"ATL",mode:"lines",line:{color:"#ff6b6b",width:3}},
-        {x,y:tsb,name:"TSB",mode:"lines",line:{color:"#3ddc97",width:3}},
-      ],
-      {
-        paper_bgcolor:"#0f1117",plot_bgcolor:"#0f1117",
-        font:{color:"#e9eef6"},
-        xaxis:{gridcolor:"#1f2430"},
-        yaxis:{gridcolor:"#1f2430",title:"load"},
-        margin:{t:20,l:55,r:10,b:45},
-        legend:{orientation:"h"}
-      },
-      {displayModeBar:false}
-    );
-
-    const last = s[s.length-1];
-    document.getElementById("load_meta").textContent =
-      "Last update: " + j.generated_at.slice(0,19).replace("T"," ") +
-      " · CTL " + last.ctl.toFixed(1) +
-      " ATL " + last.atl.toFixed(1) +
-      " TSB " + last.tsb.toFixed(1);
-  });
-
-  // ---- Recent activities ----
-  fetchJSON(DATA + "/recent.json").then(j=>{
-    const el = document.getElementById("activities_list");
-    el.innerHTML = "<ul>" + j.items.map(a=>
-      "<li><strong>" + a.date.slice(0,10) + "</strong> — " +
-      a.name + " (" + a.distance_km.toFixed(1) + " km, " +
-      a.pace_min_per_km.toFixed(2) + " min/km)</li>"
-    ).join("") + "</ul>";
-  });
-})();
-</script>
+  <script src="script.js"></script>
 </body>
 </html>
 
-
-<!-- RunMetrics inline static renderer (minimal, no deps) -->
-<section class="card">
-  <h2>Recent activities</h2>
-  <div id="rm_recent">Loading activities…</div>
-</section>
-
-<script>
-(function(){
-  var base = window.location.origin + window.location.pathname.replace(/\/$/, "");
-  var url = base + "/data/recent.json";
-
-  fetch(url, { cache: "no-store" })
-    .then(function(r){
-      if(!r.ok) throw new Error(r.status + " " + r.statusText);
-      return r.json();
-    })
-    .then(function(j){
-      var el = document.getElementById("rm_recent");
-      el.innerHTML = j.items.map(function(a){
-        var hr = (a.avg_hr === null || a.avg_hr === undefined) ? "–" : a.avg_hr;
-        return (
-          "<div style='margin-bottom:6px'>" +
-          "<strong>" + a.date.slice(0,10) + "</strong> — " + a.name +
-          " <span style='color:#888'>(" +
-          a.distance_km.toFixed(1) + " km, " +
-          a.pace_min_per_km.toFixed(2) + " min/km, HR " + hr +
-          ")</span></div>"
-        );
-      }).join("");
-    })
-    .catch(function(err){
-      console.error(err);
-      document.getElementById("rm_recent").textContent =
-        "Failed to load recent activities (see console).";
-    });
-})();
-</script>
-
-
-<!-- RunMetrics: CTL/ATL/TSB plot from static JSON -->
-<section class="card">
-  <h2>Training load (CTL / ATL / TSB)</h2>
-  <div id="rm_pmc_meta" class="small muted">Loading load series…</div>
-  <div id="rm_pmc_plot" style="width:100%;height:420px;margin-top:10px"></div>
-</section>
-
-<script>
-(function(){
-  function fetchJSON(url){
-    return fetch(url, { cache: "no-store" })
-      .then(function(r){
-        if(!r.ok) throw new Error(r.status + " " + r.statusText);
-        return r.json();
-      });
-  }
-
-  function sliceLast(arr, n){
-    if(!arr) return [];
-    if(arr.length <= n) return arr;
-    return arr.slice(arr.length - n);
-  }
-
-  function plot(series, generated_at){
-    var meta = document.getElementById("rm_pmc_meta");
-    var plotDiv = document.getElementById("rm_pmc_plot");
-    if(!plotDiv) return;
-
-    // last 120 days
-    var s = sliceLast(series, 120);
-
-    var x = s.map(function(p){ return p.date; });
-    var ctl = s.map(function(p){ return p.ctl; });
-    var atl = s.map(function(p){ return p.atl; });
-    var tsb = s.map(function(p){ return p.tsb; });
-
-    var DARK = {
-      paper_bgcolor:"#0f1117",
-      plot_bgcolor:"#0f1117",
-      font:{color:"#e9eef6"},
-      xaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
-      yaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
-      legend:{orientation:"h"},
-      margin:{t:20,r:10,l:55,b:45}
-    };
-
-    var traces = [
-      {x:x, y:ctl, type:"scatter", mode:"lines", name:"CTL (fitness)", line:{color:"#6aa9ff", width:3}},
-      {x:x, y:atl, type:"scatter", mode:"lines", name:"ATL (fatigue)", line:{color:"#ff6b6b", width:3}},
-      {x:x, y:tsb, type:"scatter", mode:"lines", name:"TSB (form)", line:{color:"#3ddc97", width:3}}
-    ];
-
-    var layout = {
-      title:"",
-      ...DARK,
-      yaxis:{...DARK.yaxis, title:"load units"},
-      xaxis:{...DARK.xaxis, title:"date"}
-    };
-
-    // Plotly.newPlot is how your original dashboard rendered plots 【1-7910db】
-    Plotly.newPlot(plotDiv, traces, layout, {displayModeBar:false});
-
-    if(meta){
-      var last = s[s.length - 1];
-      meta.textContent =
-        "Last update: " + (generated_at || "").slice(0,19).replace("T"," ") + " UTC" +
-        " · CTL " + (last.ctl || 0).toFixed(1) +
-        " ATL " + (last.atl || 0).toFixed(1) +
-        " TSB " + (last.tsb || 0).toFixed(1);
-    }
-  }
-
-  function boot(){
-    var base = window.location.origin + window.location.pathname.replace(/\/$/, "");
-    var url = base + "/data/load_365.json";
-
-    if(typeof Plotly === "undefined"){
-      console.error("Plotly not loaded");
-      var meta = document.getElementById("rm_pmc_meta");
-      if(meta) meta.textContent = "Plotly failed to load.";
-      return;
-    }
-
-    fetchJSON(url)
-      .then(function(j){
-        if(!j || !j.series || !j.series.length){
-          var meta = document.getElementById("rm_pmc_meta");
-          if(meta) meta.textContent = "No load series found.";
-          return;
-        }
-        plot(j.series, j.generated_at);
-      })
-      .catch(function(e){
-        console.error(e);
-        var meta = document.getElementById("rm_pmc_meta");
-        if(meta) meta.textContent = "Failed to load load_365.json (see console).";
-      });
-  }
-
-  if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
-})();
-</script>
-
+<section class="card subtle" id="recommendation_explain"></section>
