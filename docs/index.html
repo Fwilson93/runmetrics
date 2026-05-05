@@ -92,6 +92,64 @@
 <section class="card subtle">
   <div id="load_meta">Loading training summary…</div>
 </section>
+
+<script>
+(function(){
+  const BASE = window.location.origin + window.location.pathname.replace(/\/, "");
+  const DATA = BASE + "/data";
+
+  function fetchJSON(p){
+    return fetch(p, {cache:"no-store"}).then(r=>{
+      if(!r.ok) throw new Error(r.status+" "+r.statusText);
+      return r.json();
+    });
+  }
+
+  // ---- CTL / ATL / TSB plot ----
+  fetchJSON(DATA + "/load_365.json").then(j=>{
+    const s = j.series.slice(-120);
+    const x = s.map(p=>p.date);
+    const ctl = s.map(p=>p.ctl);
+    const atl = s.map(p=>p.atl);
+    const tsb = s.map(p=>p.tsb);
+
+    Plotly.newPlot(
+      "load_plot",
+      [
+        {x,y:ctl,name:"CTL",mode:"lines",line:{color:"#6aa9ff",width:3}},
+        {x,y:atl,name:"ATL",mode:"lines",line:{color:"#ff6b6b",width:3}},
+        {x,y:tsb,name:"TSB",mode:"lines",line:{color:"#3ddc97",width:3}},
+      ],
+      {
+        paper_bgcolor:"#0f1117",plot_bgcolor:"#0f1117",
+        font:{color:"#e9eef6"},
+        xaxis:{gridcolor:"#1f2430"},
+        yaxis:{gridcolor:"#1f2430",title:"load"},
+        margin:{t:20,l:55,r:10,b:45},
+        legend:{orientation:"h"}
+      },
+      {displayModeBar:false}
+    );
+
+    const last = s[s.length-1];
+    document.getElementById("load_meta").textContent =
+      "Last update: " + j.generated_at.slice(0,19).replace("T"," ") +
+      " · CTL " + last.ctl.toFixed(1) +
+      " ATL " + last.atl.toFixed(1) +
+      " TSB " + last.tsb.toFixed(1);
+  });
+
+  // ---- Recent activities ----
+  fetchJSON(DATA + "/recent.json").then(j=>{
+    const el = document.getElementById("activities_list");
+    el.innerHTML = "<ul>" + j.items.map(a=>
+      "<li><strong>" + a.date.slice(0,10) + "</strong> — " +
+      a.name + " (" + a.distance_km.toFixed(1) + " km, " +
+      a.pace_min_per_km.toFixed(2) + " min/km)</li>"
+    ).join("") + "</ul>";
+  });
+})();
+</script>
 </body>
 </html>
 
