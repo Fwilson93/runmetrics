@@ -134,3 +134,111 @@
 })();
 </script>
 
+
+<!-- RunMetrics: CTL/ATL/TSB plot from static JSON -->
+<section class="card">
+  <h2>Training load (CTL / ATL / TSB)</h2>
+  <div id="rm_pmc_meta" class="small muted">Loading load series…</div>
+  <div id="rm_pmc_plot" style="width:100%;height:420px;margin-top:10px"></div>
+</section>
+
+<script>
+(function(){
+  function fetchJSON(url){
+    return fetch(url, { cache: "no-store" })
+      .then(function(r){
+        if(!r.ok) throw new Error(r.status + " " + r.statusText);
+        return r.json();
+      });
+  }
+
+  function sliceLast(arr, n){
+    if(!arr) return [];
+    if(arr.length <= n) return arr;
+    return arr.slice(arr.length - n);
+  }
+
+  function plot(series, generated_at){
+    var meta = document.getElementById("rm_pmc_meta");
+    var plotDiv = document.getElementById("rm_pmc_plot");
+    if(!plotDiv) return;
+
+    // last 120 days
+    var s = sliceLast(series, 120);
+
+    var x = s.map(function(p){ return p.date; });
+    var ctl = s.map(function(p){ return p.ctl; });
+    var atl = s.map(function(p){ return p.atl; });
+    var tsb = s.map(function(p){ return p.tsb; });
+
+    var DARK = {
+      paper_bgcolor:"#0f1117",
+      plot_bgcolor:"#0f1117",
+      font:{color:"#e9eef6"},
+      xaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
+      yaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
+      legend:{orientation:"h"},
+      margin:{t:20,r:10,l:55,b:45}
+    };
+
+    var traces = [
+      {x:x, y:ctl, type:"scatter", mode:"lines", name:"CTL (fitness)", line:{color:"#6aa9ff", width:3}},
+      {x:x, y:atl, type:"scatter", mode:"lines", name:"ATL (fatigue)", line:{color:"#ff6b6b", width:3}},
+      {x:x, y:tsb, type:"scatter", mode:"lines", name:"TSB (form)", line:{color:"#3ddc97", width:3}}
+    ];
+
+    var layout = {
+      title:"",
+      ...DARK,
+      yaxis:{...DARK.yaxis, title:"load units"},
+      xaxis:{...DARK.xaxis, title:"date"}
+    };
+
+    // Plotly.newPlot is how your original dashboard rendered plots 【1-7910db】
+    Plotly.newPlot(plotDiv, traces, layout, {displayModeBar:false});
+
+    if(meta){
+      var last = s[s.length - 1];
+      meta.textContent =
+        "Last update: " + (generated_at || "").slice(0,19).replace("T"," ") + " UTC" +
+        " · CTL " + (last.ctl || 0).toFixed(1) +
+        " ATL " + (last.atl || 0).toFixed(1) +
+        " TSB " + (last.tsb || 0).toFixed(1);
+    }
+  }
+
+  function boot(){
+    var base = window.location.origin + window.location.pathname.replace(/\/$/, "");
+    var url = base + "/data/load_365.json";
+
+    if(typeof Plotly === "undefined"){
+      console.error("Plotly not loaded");
+      var meta = document.getElementById("rm_pmc_meta");
+      if(meta) meta.textContent = "Plotly failed to load.";
+      return;
+    }
+
+    fetchJSON(url)
+      .then(function(j){
+        if(!j || !j.series || !j.series.length){
+          var meta = document.getElementById("rm_pmc_meta");
+          if(meta) meta.textContent = "No load series found.";
+          return;
+        }
+        plot(j.series, j.generated_at);
+      })
+      .catch(function(e){
+        console.error(e);
+        var meta = document.getElementById("rm_pmc_meta");
+        if(meta) meta.textContent = "Failed to load load_365.json (see console).";
+      });
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+
