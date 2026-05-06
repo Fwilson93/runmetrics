@@ -106,12 +106,52 @@
     host.innerHTML = html;
   }
 
+  /* RM_STATIC_INSIGHTS_V1 */
+  function renderInsights(series){
+    var el = document.getElementById("insights_panel");
+    if(!el || !series || series.length < 30) return;
+
+    var last = series[series.length - 1];
+
+    function avg(arr){
+      var t = 0;
+      for(var i=0;i<arr.length;i++) t += arr[i];
+      return arr.length ? (t/arr.length) : 0;
+    }
+
+    var last7  = series.slice(-7);
+    var last28 = series.slice(-28);
+
+    var load7  = avg(last7.map(function(d){ return d.daily_load || 0; }));
+    var load28 = avg(last28.map(function(d){ return d.daily_load || 0; }));
+
+    var trend = "stable";
+    if(load7 > load28 * 1.10) trend = "rising";
+    else if(load7 < load28 * 0.90) trend = "falling";
+
+    var freshness = "balanced";
+    if(last.tsb > 5) freshness = "fresh";
+    else if(last.tsb < -10) freshness = "fatigued";
+
+    var trainingDays7 = last7.filter(function(d){ return (d.daily_load || 0) > 0; }).length;
+
+    el.innerHTML =
+      "<strong>Current state</strong><br>" +
+      "Load trend: " + trend + " (7d vs 28d)<br>" +
+      "Freshness: " + freshness + " (TSB " + (Math.round(last.tsb*10)/10) + ")<br>" +
+      "Training days (last 7): " + trainingDays7 + " / 7<br>" +
+      "<span class=\\"muted\\">Use directionally (decision support), not as a precise forecast.</span>";
+  }
+
+
+
   function boot() {
     // Load plot
     fetchJSON(DATA + "/load_365.json")
       .then(function (j) {
         if (j && j.series && j.series.length) plotLoad(j.series, j.generated_at);
-        else {
+        renderInsights(j.series);
+else {
           var metaDiv = byId("load_meta");
           if (metaDiv) metaDiv.textContent = "No load series found in load_365.json.";
         }
