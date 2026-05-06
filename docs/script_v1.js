@@ -140,7 +140,7 @@
       "Load trend: " + trend + " (7d vs 28d)<br>" +
       "Freshness: " + freshness + " (TSB " + (Math.round(last.tsb*10)/10) + ")<br>" +
       "Training days (last 7): " + trainingDays7 + " / 7<br>" +
-      "<span class=\\"muted\\">Use directionally (decision support), not as a precise forecast.</span>";
+    el.innerHTML += "<br><span class=\"muted\">Use directionally (decision support), not as a precise forecast.</span>";
   }
 
 
