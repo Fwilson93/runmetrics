@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>RunMetrics</title>
-  <link rel="stylesheet" href="style.css"/>
+
+  <link rel="stylesheet" href="style.css">
   <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
 </head>
 <body>
@@ -19,7 +20,8 @@
 <section class="card">
   <h2>Training load (CTL / ATL / TSB)</h2>
   <p class="explain">
-    CTL = long‑term fitness · ATL = short‑term fatigue · TSB = form (CTL − ATL)
+    CTL = long‑term load (fitness) · ATL = short‑term load (fatigue) ·
+    TSB = form (CTL − ATL)
   </p>
   <div id="load_plot" class="plot"></div>
   <div id="load_meta" class="small muted"></div>
@@ -28,10 +30,10 @@
 <section class="card">
   <h2>Training insights</h2>
   <p class="explain">
-    Derived from your recent training history (static snapshot).
+    Derived from recent history (static snapshot).
   </p>
   <div id="insights_panel" class="small muted">
-    Insights are computed from recent load, zone balance, and consistency.
+    See load trends, consistency, and balance above.
   </div>
 </section>
 
