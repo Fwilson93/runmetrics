@@ -1,84 +1,46 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en-GB">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>RunMetrics</title>
-
   <link rel="stylesheet" href="style.css"/>
   <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
 </head>
 <body>
-  <header class="top">
-    <div>
-      <h1>🏃 RunMetrics</h1>
-      <div class="sub">Solid history + simple projected futures</div>
-      <div class="small muted">Backend: <span id="api_url"></span></div>
-    </div>
-  </header>
 
-  <section class="card">
-    <h2>Fitness / fatigue / form (past + projected)</h2>
-    <p class="explain">
-      <strong>Fitness (CTL)</strong>: long‑term load (how fit you’re becoming).<br>
-      <strong>Fatigue (ATL)</strong>: short‑term load (how tired you are now).<br>
-      <strong>Form (TSB)</strong> = CTL − ATL (freshness).
-      <span class="muted">Past = solid. Projection = your slider choice (dash‑dot).</span>
-    </p>
-    <div id="rec_workout" class="small muted"></div>
-    <div id="load_plot" class="plot"></div>
-    <div id="load_meta" class="small muted"></div>
-  </section>
+<header class="top">
+  <div>
+    <h1>🏃 RunMetrics</h1>
+    <div class="sub">Static history and derived insights</div>
+  </div>
+</header>
 
-  <section class="card">
-    <h2>What if I train tomorrow?</h2>
-    <p class="explain">
-      Adjust duration/intensity. The ranked table updates, and the long‑term plot above shows the next‑week projection for your choice.
-    </p>
-    <div class="controls">
-      <label>
-        Duration: <span id="dur_lbl"></span> min
-        <input id="dur" type="range" min="0" max="180" step="5" value="45">
-      </label>
+<section class="card">
+  <h2>Training load (CTL / ATL / TSB)</h2>
+  <p class="explain">
+    CTL = long‑term fitness · ATL = short‑term fatigue · TSB = form (CTL − ATL)
+  </p>
+  <div id="load_plot" class="plot"></div>
+  <div id="load_meta" class="small muted"></div>
+</section>
 
-      <label>
-        Intensity
-        <select id="intensity_mode">
-          <option value="0.50">Easy jog</option>
-          <option value="0.60">Easy aerobic</option>
-          <option value="0.65" selected>Aerobic (Z2)</option>
-          <option value="0.72">Steady</option>
-          <option value="0.80">Tempo</option>
-          <option value="0.88">Hard</option>
-        </select>
-      </label>
-    </div>
-    <div id="scenario_table" class="small"></div>
-  </section>
+<section class="card">
+  <h2>Training insights</h2>
+  <p class="explain">
+    Derived from your recent training history (static snapshot).
+  </p>
+  <div id="insights_panel" class="small muted">
+    Insights are computed from recent load, zone balance, and consistency.
+  </div>
+</section>
 
-  <!-- HR panels: compact side-by-side -->
-  <section class="grid-two" id="hr_grid">
-    <section class="card compact" id="zones_week_panel">
-      <h3>Time in HR zones (this week)</h3>
-      <div id="zones_week_plot" class="plot tinyplot"></div>
-    </section>
+<section class="card">
+  <h2>Recent activities</h2>
+  <div id="recent_list" class="small muted">Loading activities…</div>
+</section>
 
-    <section class="card compact" id="zones_visual_panel">
-      <h3>HR zones</h3>
-      <div id="zones_band_plot" class="plot tinyplot"></div>
-      <div id="zones_band_note" class="small muted"></div>
-    </section>
-  </section>
+<script src="script_v1.js"></script>
 
-  <!-- Full-width skew line below both panels -->
-  <section class="card subtle" id="zones_global_skew"></section>
-
-  <footer class="small muted">
-    ⚠️ Outstanding: migrate DB off Render free tier before 30‑day expiry.
-  </footer>
-
-  <script src="script.js"></script>
 </body>
 </html>
-
-<section class="card subtle" id="recommendation_explain"></section>
