@@ -1,100 +1,19 @@
 :root{
-  --bg:#07080b;
-  --panel:#0f1117;
-  --panel2:#11131a;
-  --line:#1f2430;
-  --fg:#e9eef6;
-  --muted:#a7b0c0;
+  --bg:#07080b;--panel:#0f1117;--panel2:#11131a;--line:#1f2430;
+  --fg:#e9eef6;--muted:#a7b0c0;
 }
-
-*{ box-sizing:border-box; }
-html,body{ height:100%; }
-
-body{
-  margin:0;
-  padding:14px;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-               Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  background: linear-gradient(180deg, #05060a, var(--bg));
-  color: var(--fg);
-}
-
-.top{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:12px;
-  flex-wrap:wrap;
-  margin:8px 0 14px;
-}
-
-h1{ margin:0; font-size:2rem; letter-spacing:-0.02em; }
-.sub{ margin-top:4px; color: var(--muted); }
-.small{ font-size:0.92rem; }
-.muted{ color: var(--muted); }
-
-.card{
-  background: linear-gradient(180deg, var(--panel2), var(--panel));
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px;
-  margin: 14px 0;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-}
-
-.card.compact{ padding-top:10px; }
-.card.subtle{
-  margin-top: 8px;
-  padding: 8px 14px;
-  font-size: 0.95rem;
-  color: var(--muted);
-  background: linear-gradient(180deg, #0d0f15, #0b0d12);
-}
-
-h2{ margin:0 0 8px; font-size:1.2rem; }
-h3{ margin:0 0 8px; font-size:1.05rem; }
-
-.explain{
-  color:var(--muted);
-  font-size:0.95rem;
-  margin:0 0 8px;
-  line-height:1.35;
-}
-
-.plot{ width:100%; height:420px; }
-.plot.tinyplot{ height:180px; }
-
-.controls{ display:grid; gap:10px; margin:8px 0 10px; }
-.controls label{ display:grid; gap:6px; }
-input[type="range"]{ width:100%; }
-
-select{
-  width:100%;
-  padding:8px;
-  border-radius:10px;
-  border:1px solid var(--line);
-  background:#0b0d12;
-  color:var(--fg);
-}
-
-.grid-two{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:14px;
-  margin-top:14px;
-}
-
-.tablewrap{ overflow-x:auto; }
-table{ width:100%; border-collapse:collapse; min-width:680px; }
-th,td{ padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
-th{ text-align:left; font-weight:650; }
-td.num,th.num{ text-align:right; font-variant-numeric: tabular-nums; }
-
-@media (min-width: 900px){
-  body{ padding:24px 32px; max-width:1200px; margin:auto; }
-  h1{ font-size:2.35rem; }
-  .controls{ grid-template-columns:1fr 1fr; align-items:end; }
-  .grid-two{ grid-template-columns:1fr 1fr; }
-  .plot{ height:460px; }
-  .plot.tinyplot{ height:200px; }
-}
+*{box-sizing:border-box} html,body{height:100%}
+body{margin:0;padding:18px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+background:linear-gradient(180deg,#05060a,var(--bg));color:var(--fg)}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin:8px 0 14px}
+h1{margin:0;font-size:2.1rem;letter-spacing:-0.02em}
+.sub{margin-top:4px;color:var(--muted)}
+.small{font-size:0.92rem}
+.muted{color:var(--muted)}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+border-radius:14px;padding:12px;margin:14px 0;box-shadow:0 10px 30px rgba(0,0,0,0.25)}
+h2{margin:0 0 8px;font-size:1.2rem}
+.explain{color:var(--muted);font-size:0.95rem;margin:0 0 8px;line-height:1.35}
+.plot{width:100%;height:420px}
+.plot.smallplot{height:260px}
+@media (min-width:900px){body{padding:24px 32px;max-width:1200px;margin:auto}.plot{height:460px}.plot.smallplot{height:280px}}

@@ -1,0 +1,70 @@
+{
+  "status": "ok",
+  "generated_at": "2026-05-07T07:34:04.657002+00:00",
+  "weeks": [
+    {
+      "week_start": "2026-01-19",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-01-26",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-02-02",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-02-09",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-02-16",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-02-23",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-03-02",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-03-09",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-03-16",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-03-23",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-03-30",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-04-06",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-04-13",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-04-20",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-04-27",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-05-04",
+      "distance_km": 10.18
+    }
+  ]
+}

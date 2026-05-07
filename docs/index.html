@@ -4,45 +4,35 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>RunMetrics</title>
-
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
 </head>
 <body>
-
 <header class="top">
   <div>
     <h1>🏃 RunMetrics</h1>
-    <div class="sub">Static history and derived insights</div>
+    <div class="sub">Static dashboard (local build → GitHub Pages)</div>
   </div>
 </header>
 
 <section class="card">
   <h2>Training load (CTL / ATL / TSB)</h2>
-  <p class="explain">
-    CTL = long‑term load (fitness) · ATL = short‑term load (fatigue) ·
-    TSB = form (CTL − ATL)
-  </p>
+  <p class="explain">CTL = long‑term load (fitness) · ATL = short‑term load (fatigue) · TSB = form (CTL−ATL)</p>
   <div id="load_plot" class="plot"></div>
   <div id="load_meta" class="small muted"></div>
 </section>
 
 <section class="card">
-  <h2>Training insights</h2>
-  <p class="explain">
-    Derived from recent history (static snapshot).
-  </p>
-  <div id="insights_panel" class="small muted">
-    See load trends, consistency, and balance above.
-  </div>
+  <h2>Progress & injury guardrails</h2>
+  <div id="insights" class="small muted">Loading…</div>
+  <div id="weekly_plot" class="plot smallplot"></div>
 </section>
 
 <section class="card">
   <h2>Recent activities</h2>
-  <div id="recent_list" class="small muted">Loading activities…</div>
+  <div id="recent_list" class="small muted">Loading…</div>
 </section>
 
-<script src="script_v1.js"></script>
-
+<script src="app.js"></script>
 </body>
 </html>
