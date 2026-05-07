@@ -1,0 +1,6179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>RunMetrics Codebase</title>
+  <style>
+    body { background:#0f1117; color:#e9eef6; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    h1 { font-size: 1.4rem; }
+    .meta { color:#a7b0c0; margin-bottom: 1em; }
+    pre { white-space: pre-wrap; font-size: 12px; line-height: 1.45; }
+  </style>
+</head>
+<body>
+<h1>RunMetrics codebase snapshot</h1>
+<div class="meta">Commit: cb15a1f2d7ea318f451987d514810abb7d6c7c7e<br>Generated (UTC): 2026-05-07 08:12:47Z</div>
+<pre>
+================================================================================
+FILE: .gitignore
+================================================================================
+# Python
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.local
+data/
+
+UPDATE
+
+# Allow published site data
+!docs/data/
+!docs/data/*.json
+
+================================================================================
+FILE: .python-version
+================================================================================
+3.12
+
+================================================================================
+FILE: backend/app/__init__.py
+================================================================================
+
+================================================================================
+FILE: backend/app/api/__init__.py
+================================================================================
+
+================================================================================
+FILE: backend/app/api/analytics.py
+================================================================================
+from fastapi import APIRouter, Query
+from datetime import datetime, timedelta, timezone, date
+import math
+import statistics
+
+from app.db.session import SessionLocal
+from app.db.models import Activity
+
+router = APIRouter()
+
+def _to_date(dt):
+    if not dt:
+        return None
+    if isinstance(dt, datetime):
+        return dt.date()
+    return None
+
+def _monday(d: date) -&gt; date:
+    return d - timedelta(days=d.weekday())
+
+def _pace_s_per_km(distance_m, moving_time_s):
+    if not distance_m or not moving_time_s or distance_m &lt;= 0:
+        return None
+    return moving_time_s / (distance_m / 1000.0)
+
+def _pace_min_per_km(distance_m, moving_time_s):
+    p = _pace_s_per_km(distance_m, moving_time_s)
+    return (p / 60.0) if p else None
+
+def _hrmax_observed(activities):
+    vals = [a.max_heartrate for a in activities if a.max_heartrate]
+    return max(vals) if vals else 190.0
+
+
+def _banister_trimp(duration_min: float, hr_avg: float, hr_rest: float, hr_max: float, sex: str = "male") -&gt; float:
+    """
+    Banister TRIMP (HR-reserve based):
+      TRIMP = duration_min * HRR * a * exp(b * HRR)
+    with sex-specific constants (male: a=0.64, b=1.92; female: a=0.86, b=1.67).
+    """
+    if duration_min &lt;= 0 or hr_avg is None:
+        return 0.0
+    if hr_max &lt;= hr_rest:
+        return 0.0
+    hrr = (float(hr_avg) - float(hr_rest)) / (float(hr_max) - float(hr_rest))
+    hrr = max(0.0, min(1.0, hrr))
+
+    sex = (sex or "male").lower()
+    if sex.startswith("f"):
+        a, b = 0.86, 1.67
+    else:
+        a, b = 0.64, 1.92
+
+    # uses math from module imports
+    return float(duration_min * hrr * a * math.exp(b * hrr))
+
+def _load_proxy(a, hrmax, hr_rest: float = 50.0, sex: str = "male"):
+    """
+    TRIMP-based load (primary) with conservative fallback when HR missing.
+
+    Returns: (load, used_hr)
+      - used_hr=True if avg HR was available
+      - used_hr=False if fallback estimate was used
+    """
+    if not a.moving_time_s:
+        return 0.0, False
+
+    dur_min = a.moving_time_s / 60.0
+
+    # Primary: use avg HR if present
+    if a.average_heartrate and hrmax and hrmax &gt; 0:
+        tr = _banister_trimp(dur_min, float(a.average_heartrate), hr_rest, float(hrmax), sex)
+        return tr, True
+
+    # Fallback (no HR): assume easy aerobic HRR ~0.60, then scale down to be conservative
+    if hrmax and hrmax &gt; hr_rest:
+        hr_avg_est = hr_rest + 0.60 * (float(hrmax) - float(hr_rest))
+        tr = _banister_trimp(dur_min, hr_avg_est, hr_rest, float(hrmax), sex)
+        return 0.60 * tr, False
+
+    # If hrmax unknown/unusable, return a low-confidence proxy (very conservative)
+    return 0.0, False
+
+
+def _ewma_series(daily_vals, tau_days):
+    alpha = 1.0 - math.exp(-1.0 / float(tau_days))
+    out = []
+    ema = None
+    for v in daily_vals:
+        if ema is None:
+            ema = v
+        else:
+            ema = alpha * v + (1 - alpha) * ema
+        out.append(ema)
+    return out
+
+@router.get("/api/recent")
+def api_recent(limit: int = Query(default=50, ge=1, le=200)):
+    db = SessionLocal()
+    try:
+        rows = db.query(Activity).order_by(Activity.start_date.desc()).limit(limit).all()
+        out = []
+        for a in rows:
+            out.append({
+                "id": int(a.id),
+                "date": a.start_date.isoformat() if a.start_date else None,
+                "name": a.name,
+                "sport_type": a.sport_type,
+                "distance_km": (a.distance_m/1000.0) if a.distance_m else None,
+                "pace_min_per_km": _pace_min_per_km(a.distance_m, a.moving_time_s),
+                "avg_hr": a.average_heartrate,
+                "ef": (a.distance_m / a.average_heartrate) if (a.distance_m and a.average_heartrate) else None,
+            })
+        return {"status":"ok","items":out}
+    finally:
+        db.close()
+
+@router.get("/api/weekly")
+def api_weekly(
+    weeks: int = Query(default=16, ge=4, le=104),
+    goal_km: float | None = Query(default=None, ge=1, le=500),
+):
+    db = SessionLocal()
+    try:
+        acts = db.query(Activity).order_by(Activity.start_date.desc()).all()
+        acts = [a for a in acts if a.start_date and a.distance_m]
+
+        if not acts:
+            return {"status":"ok","weeks":[],"goal_km":goal_km,"goal_source":"none"}
+
+        today = datetime.now(timezone.utc).date()
+        start = today - timedelta(days=7*weeks + 7)
+
+        # group by ISO week (Monday start)
+        wk = {}
+        for a in acts:
+            d = a.start_date.date()
+            if d &lt; start:
+                continue
+            w = _monday(d)
+            wk.setdefault(w, 0.0)
+            wk[w] += (a.distance_m / 1000.0)
+
+        # build ordered list of weeks ending at current week
+        week_starts = []
+        cur = _monday(today)
+        for i in range(weeks):
+            week_starts.append(cur - timedelta(days=7*(weeks-1-i)))
+
+        distances = [wk.get(ws, 0.0) for ws in week_starts]
+
+        if goal_km is None:
+            # auto goal = median(last up to 8 weeks) * 1.05 (gentle progression)
+            tail = distances[-8:] if len(distances) &gt;= 8 else distances
+            med = statistics.median(tail) if tail else 0.0
+            goal_km = max(5.0, round(med * 1.05, 1))
+            goal_source = "auto(median_last_weeks*1.05)"
+        else:
+            goal_source = "fixed"
+
+        out = []
+        for ws, dist in zip(week_starts, distances):
+            out.append({
+                "week_start": ws.isoformat(),
+                "distance_km": dist,
+                "goal_km": goal_km,
+                "fraction": (dist/goal_km) if goal_km else None,
+            })
+
+        return {"status":"ok","weeks":out,"goal_km":goal_km,"goal_source":goal_source}
+    finally:
+        db.close()
+
+@router.get("/api/load")
+def api_load(
+    days: int = Query(default=140, ge=30, le=365),
+    tau_ctl: int = Query(default=42, ge=7, le=120),
+    tau_atl: int = Query(default=7, ge=3, le=42),
+):
+    db = SessionLocal()
+    try:
+        acts = db.query(Activity).order_by(Activity.start_date.asc()).all()
+        acts = [a for a in acts if a.start_date and a.moving_time_s]
+
+        if not acts:
+            return {"status":"ok","series":[],"note":"No activities with timestamps."}
+
+        hrmax = _hrmax_observed(acts)
+
+        end = datetime.now(timezone.utc).date()
+        start = end - timedelta(days=days-1)
+
+        # daily load aggregation
+        daily = {}
+        hr_missing = 0
+        for a in acts:
+            d = a.start_date.date()
+            if d &lt; start or d &gt; end:
+                continue
+            ld, had_hr = _load_proxy(a, hrmax)
+            if not had_hr:
+                hr_missing += 1
+            daily[d] = daily.get(d, 0.0) + ld
+
+        dates = [start + timedelta(days=i) for i in range(days)]
+        daily_vals = [daily.get(d, 0.0) for d in dates]
+
+        atl = _ewma_series(daily_vals, tau_atl)
+        ctl = _ewma_series(daily_vals, tau_ctl)
+        tsb = [c - a for c, a in zip(ctl, atl)]
+
+        series = []
+        for d, dl, c, a, t in zip(dates, daily_vals, ctl, atl, tsb):
+            series.append({
+                "date": d.isoformat(),
+                "daily_load": dl,
+                "ctl": c,
+                "atl": a,
+                "tsb": t,
+            })
+
+        return {
+            "status":"ok",
+            "hrmax_observed": hrmax,
+            "hr_missing_sessions_in_window": hr_missing,
+            "tau_ctl": tau_ctl,
+            "tau_atl": tau_atl,
+            "series": series,
+            "note":"Load is an HR-based proxy (not lab TRIMP). Good for within-athlete trend + scenario planning later."
+        }
+    finally:
+        db.close()
+
+================================================================================
+FILE: backend/app/api/health.py
+================================================================================
+from fastapi import APIRouter
+router = APIRouter()
+
+@router.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+================================================================================
+FILE: backend/app/api/ingest.py
+================================================================================
+from fastapi import APIRouter, Query
+from datetime import datetime, timezone
+import os
+import requests
+
+from app.db.session import SessionLocal
+from app.db.models import StravaToken, Activity
+
+router = APIRouter()
+
+STRAVA_CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
+STRAVA_CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET")
+
+def _iso_to_dt(s: str | None):
+    if not s:
+        return None
+    # Strava returns Z; Python wants +00:00
+    return datetime.fromisoformat(s.replace("Z", "+00:00"))
+
+def _refresh_if_needed(db, token: StravaToken) -&gt; StravaToken:
+    now = int(datetime.now(timezone.utc).timestamp())
+    # refresh 60 seconds early
+    if token.expires_at and now &lt; (token.expires_at - 60):
+        return token
+
+    resp = requests.post(
+        "https://www.strava.com/api/v3/oauth/token",
+        data={
+            "client_id": STRAVA_CLIENT_ID,
+            "client_secret": STRAVA_CLIENT_SECRET,
+            "grant_type": "refresh_token",
+            "refresh_token": token.refresh_token,
+        },
+        timeout=30,
+    )
+    data = resp.json()
+    if "access_token" not in data or "refresh_token" not in data or "expires_at" not in data:
+        raise RuntimeError(f"Token refresh failed: {data}")
+
+    token.access_token = data["access_token"]
+    token.refresh_token = data["refresh_token"]
+    token.expires_at = data["expires_at"]
+    db.commit()
+    return token
+
+@router.get("/strava/ingest")
+def ingest_activities(
+    after: str | None = Query(default=None, description="ISO date like 2026-01-01; ingests activities after this date (UTC)."),
+    per_page: int = Query(default=50, ge=1, le=200),
+    max_pages: int = Query(default=20, ge=1, le=200),
+):
+    if not STRAVA_CLIENT_ID or not STRAVA_CLIENT_SECRET:
+        return {"error": "STRAVA_CLIENT_ID/STRAVA_CLIENT_SECRET not set"}
+
+    after_ts = None
+    if after:
+        # interpret date as UTC midnight
+        after_dt = datetime.fromisoformat(after).replace(tzinfo=timezone.utc)
+        after_ts = int(after_dt.timestamp())
+
+    db = SessionLocal()
+    try:
+        token = db.query(StravaToken).order_by(StravaToken.id.desc()).first()
+        if not token:
+            return {"error": "No stored Strava token found. Visit /auth/strava/login first."}
+
+        token = _refresh_if_needed(db, token)
+
+        headers = {"Authorization": f"Bearer {token.access_token}"}
+
+        inserted = 0
+        updated = 0
+        fetched = 0
+
+        for page in range(1, max_pages + 1):
+            params = {"page": page, "per_page": per_page}
+            if after_ts:
+                params["after"] = after_ts
+
+            r = requests.get(
+                "https://www.strava.com/api/v3/athlete/activities",
+                headers=headers,
+                params=params,
+                timeout=30,
+            )
+            if r.status_code != 200:
+                return {"error": "Strava API error", "status_code": r.status_code, "response": r.text}
+
+            batch = r.json()
+            if not batch:
+                break
+
+            fetched += len(batch)
+
+            for a in batch:
+                aid = int(a["id"])
+                existing = db.get(Activity, aid)
+
+                row = existing if existing else Activity(id=aid)
+                row.athlete_id = int(a["athlete"]["id"]) if a.get("athlete") else token.athlete_id
+                row.name = a.get("name")
+                row.type = a.get("type")
+                row.sport_type = a.get("sport_type")
+                row.start_date = _iso_to_dt(a.get("start_date"))
+                row.distance_m = a.get("distance")
+                row.moving_time_s = a.get("moving_time")
+                row.elapsed_time_s = a.get("elapsed_time")
+                row.total_elevation_gain_m = a.get("total_elevation_gain")
+                row.average_speed_mps = a.get("average_speed")
+                row.max_speed_mps = a.get("max_speed")
+                row.average_heartrate = a.get("average_heartrate")
+                row.max_heartrate = a.get("max_heartrate")
+                row.has_heartrate = a.get("has_heartrate")
+                row.private = a.get("private")
+                row.raw = a
+
+                if existing:
+                    updated += 1
+                else:
+                    db.add(row)
+                    inserted += 1
+
+            db.commit()
+
+        return {
+            "status": "ok",
+            "after": after,
+            "fetched": fetched,
+            "inserted": inserted,
+            "updated": updated,
+            "note": "Safe to re-run; activities are upserted by id.",
+        }
+    finally:
+        db.close()
+
+================================================================================
+FILE: backend/app/api/metrics.py
+================================================================================
+from fastapi import APIRouter
+from app.db.session import SessionLocal
+from app.db.models import Activity, ActivityMetric
+
+router = APIRouter()
+
+@router.get("/metrics/derive")
+def derive_metrics():
+    db = SessionLocal()
+    inserted = 0
+    updated = 0
+
+    try:
+        activities = db.query(Activity).all()
+
+        for a in activities:
+            m = db.get(ActivityMetric, a.id)
+            if not m:
+                m = ActivityMetric(activity_id=a.id, athlete_id=a.athlete_id)
+                db.add(m)
+                inserted += 1
+            else:
+                updated += 1
+
+            m.distance_m = a.distance_m
+            m.moving_time_s = a.moving_time_s
+            m.avg_heartrate = a.average_heartrate
+
+            # Pace (s/km)
+            if a.distance_m and a.moving_time_s and a.distance_m &gt; 0:
+                m.avg_pace_s_per_km = (a.moving_time_s / (a.distance_m / 1000.0))
+            else:
+                m.avg_pace_s_per_km = None
+
+            # Elevation rate (m/hour)
+            if a.total_elevation_gain_m and a.moving_time_s and a.moving_time_s &gt; 0:
+                m.elevation_rate_m_per_h = (
+                    a.total_elevation_gain_m / (a.moving_time_s / 3600.0)
+                )
+            else:
+                m.elevation_rate_m_per_h = None
+
+            # Efficiency Factor (distance / HR)
+            if a.average_heartrate and a.distance_m:
+                m.efficiency_factor = a.distance_m / a.average_heartrate
+            else:
+                m.efficiency_factor = None
+
+        db.commit()
+        return {
+            "status": "ok",
+            "activities": len(activities),
+            "inserted": inserted,
+            "updated": updated,
+            "note": "Metrics stored; safe to re-run."
+        }
+    finally:
+        db.close()
+
+================================================================================
+FILE: backend/app/api/physiology.py
+================================================================================
+from fastapi import APIRouter
+from datetime import datetime, timedelta, timezone
+import math
+import statistics
+
+from app.db.session import SessionLocal
+from app.db.models import Activity
+
+router = APIRouter()
+
+def ewma(vals, tau):
+    a = 1 - math.exp(-1/tau)
+    out, ema = [], None
+    for v in vals:
+        ema = v if ema is None else a*v + (1-a)*ema
+        out.append(ema)
+    return out
+
+def estimate_hrmax(acts):
+    vals = [a.max_heartrate for a in acts if a.max_heartrate]
+    return max(vals) if vals else 190
+
+def estimate_zone_thresholds(acts, hrmax):
+    hrs, speeds = [], []
+    for a in acts:
+        if a.average_heartrate and a.average_speed_mps:
+            hrs.append(a.average_heartrate)
+            speeds.append(a.average_speed_mps)
+
+    if len(hrs) &lt; 10:
+        return None
+
+    # crude but defensible: percentiles of HR distribution weighted by speed
+    lt1 = statistics.quantiles(hrs, n=4)[0]   # ~25th %ile
+    lt2 = statistics.quantiles(hrs, n=4)[2]   # ~75th %ile
+
+    return {
+        "hrmax": hrmax,
+        "lt1_hr": int(lt1),
+        "lt2_hr": int(lt2),
+        "zones": {
+            "Z1": (0.60*hrmax, lt1),
+            "Z2": (lt1, 0.85*lt2),
+            "Z3": (0.85*lt2, lt2),
+            "Z4": (lt2, 0.95*hrmax),
+            "Z5": (0.95*hrmax, hrmax)
+        }
+    }
+
+@router.get("/api/zones")
+def zones():
+    db = SessionLocal()
+    try:
+        acts = db.query(Activity).all()
+        hrmax = estimate_hrmax(acts)
+        est = estimate_zone_thresholds(acts, hrmax)
+        if not est:
+            return {"status":"insufficient_data"}
+        return {"status":"ok", **est}
+    finally:
+        db.close()
+
+@router.get("/api/scenarios")
+def scenarios(days: int = 14):
+    db = SessionLocal()
+    try:
+        acts = db.query(Activity).order_by(Activity.start_date.asc()).all()
+        acts = [a for a in acts if a.start_date and a.moving_time_s]
+
+        if not acts:
+            return {"status":"no_data"}
+
+        hrmax = estimate_hrmax(acts)
+
+        # build daily historical load
+        end = datetime.now(timezone.utc).date()
+        start = end - timedelta(days=42)
+
+        daily = {}
+        for a in acts:
+            d = a.start_date.date()
+            if d &lt; start or d &gt; end:
+                continue
+            if a.average_heartrate:
+                x = (a.average_heartrate/hrmax)**2
+                load = (a.moving_time_s/60)*x*100
+            else:
+                load = (a.moving_time_s/60)*30
+            daily[d] = daily.get(d, 0) + load
+
+        days_hist = [start + timedelta(days=i) for i in range((end-start).days+1)]
+        hist_load = [daily.get(d,0) for d in days_hist]
+
+        ctl = ewma(hist_load, 42)
+        atl = ewma(hist_load, 7)
+
+        ctl0, atl0 = ctl[-1], atl[-1]
+
+        scenarios = [
+            ("Rest", 0),
+            ("45min Z2", 45*0.65*100),
+            ("Steady 60min", 60*0.72*100),
+            ("Long easy 90min", 90*0.65*100),
+            ("Hard intervals", 60*0.88*100)
+        ]
+
+        out = []
+        for name, load in scenarios:
+            loads = hist_load + [load] + [0]*(days-1)
+            ctl_s = ewma(loads, 42)[-days:]
+            atl_s = ewma(loads, 7)[-days:]
+            tsb_s = [c-a for c,a in zip(ctl_s, atl_s)]
+            out.append({
+                "name": name,
+                "delta_ctl": ctl_s[-1]-ctl0,
+                "delta_atl": atl_s[-1]-atl0,
+                "delta_tsb": tsb_s[-1],
+                "recommendation": "good" if tsb_s[-1] &gt; -10 else "risky",
+                "series": {
+                    "ctl": ctl_s,
+                    "atl": atl_s,
+                    "tsb": tsb_s
+                }
+            })
+
+        # simple ranking
+        out.sort(key=lambda x: (-x["delta_tsb"], -x["delta_ctl"]))
+        return {"status":"ok","scenarios":out}
+    finally:
+        db.close()
+
+================================================================================
+FILE: backend/app/api/ping.py
+================================================================================
+from fastapi import APIRouter
+from datetime import datetime, timezone
+
+router = APIRouter()
+
+@router.get("/ping")
+def ping():
+    return {"pong": True, "time_utc": datetime.now(timezone.utc).isoformat()}
+
+================================================================================
+FILE: backend/app/api/pmc.py
+================================================================================
+from fastapi import APIRouter, Query
+from datetime import datetime, timezone, date, timedelta
+import math
+import os
+from sqlalchemy import desc
+
+from app.db.session import SessionLocal
+from app.db.models import Activity, DailyPMC
+
+router = APIRouter()
+
+def _day(dts):
+    if not dts:
+        return None
+    # ensure date in UTC
+    try:
+        return dts.astimezone(timezone.utc).date()
+    except Exception:
+        return dts.date()
+
+def _banister_trimp(duration_min: float, hr_avg: float, hr_rest: float, hr_max: float, sex: str) -&gt; float | None:
+    if duration_min &lt;= 0 or hr_avg is None:
+        return None
+    if hr_max &lt;= hr_rest:
+        return None
+    hrr = (hr_avg - hr_rest) / (hr_max - hr_rest)
+    # clamp
+    hrr = max(0.0, min(1.0, hrr))
+
+    sex = (sex or "male").lower()
+    # Classic coefficients (male: 0.64, 1.92; female: 0.86, 1.67) 【4-98bbb0】【6-01a3fe】【5-c6e8c3】
+    if sex.startswith("f"):
+        a, b = 0.86, 1.67
+    else:
+        a, b = 0.64, 1.92
+
+    return float(duration_min * hrr * a * math.exp(b * hrr))
+
+def _ewma_update(prev: float, x: float, tau: float) -&gt; float:
+    # PMC update form (commonly presented as CTL_today = CTL_yesterday + (TSS_today - CTL_yesterday)/tau). 【3-dc96f1】
+    return prev + (x - prev) / tau
+
+@router.get("/pmc/recompute")
+def pmc_recompute(
+    hr_rest: float = Query(default=50.0, ge=30.0, le=100.0, description="Resting HR (bpm) used for TRIMP (default 50)."),
+    hr_max: float = Query(default=190.0, ge=120.0, le=230.0, description="Max HR (bpm) used for TRIMP (default 190)."),
+    sex: str = Query(default="male", description="male/female TRIMP weighting."),
+    ctl_tau: int = Query(default=42, ge=14, le=90, description="CTL time constant in days (default 42)."),
+    atl_tau: int = Query(default=7, ge=3, le=21, description="ATL time constant in days (default 7)."),
+):
+    """
+    Recompute daily TRIMP + CTL/ATL/TSB across all stored activities.
+    """
+    db = SessionLocal()
+    try:
+        acts = db.query(Activity).order_by(Activity.start_date.asc()).all()
+        if not acts:
+            return {"status": "ok", "note": "No activities found."}
+
+        athlete_id = int(acts[-1].athlete_id)
+
+        # Build daily TRIMP sums
+        daily = {}
+        earliest = None
+        latest = None
+
+        for a in acts:
+            d = _day(a.start_date)
+            if not d:
+                continue
+            earliest = d if earliest is None else min(earliest, d)
+            latest = d if latest is None else max(latest, d)
+
+            if a.moving_time_s and a.average_heartrate:
+                tr = _banister_trimp(a.moving_time_s / 60.0, float(a.average_heartrate), hr_rest, hr_max, sex)
+            else:
+                tr = None
+
+            # if HR missing, treat as 0 load for PMC input (explicit)
+            daily.setdefault(d, 0.0)
+            if tr is not None:
+                daily[d] += tr
+
+        # Fill missing days with 0 load
+        days = []
+        cur = earliest
+        while cur &lt;= latest:
+            days.append(cur)
+            cur += timedelta(days=1)
+
+        # Remove old rows for this athlete (simple approach for now)
+        db.query(DailyPMC).filter(DailyPMC.athlete_id == athlete_id).delete()
+        db.commit()
+
+        ctl = 0.0
+        atl = 0.0
+
+        now = datetime.now(timezone.utc)
+
+        for d in days:
+            x = float(daily.get(d, 0.0))  # daily TRIMP
+            ctl = _ewma_update(ctl, x, float(ctl_tau))
+            atl = _ewma_update(atl, x, float(atl_tau))
+            tsb = ctl - atl
+
+            row = DailyPMC(
+                day=d,
+                athlete_id=athlete_id,
+                trimp=x,
+                ctl=float(ctl),
+                atl=float(atl),
+                tsb=float(tsb),
+                computed_at=now,
+                params={
+                    "method": "banister_trimp",
+                    "hr_rest": hr_rest,
+                    "hr_max": hr_max,
+                    "sex": sex,
+                    "ctl_tau": ctl_tau,
+                    "atl_tau": atl_tau
+                }
+            )
+            db.add(row)
+
+        db.commit()
+
+        return {
+            "status": "ok",
+            "days": len(days),
+            "athlete_id": athlete_id,
+            "params": {"hr_rest": hr_rest, "hr_max": hr_max, "sex": sex, "ctl_tau": ctl_tau, "atl_tau": atl_tau},
+            "note": "PMC recomputed. CTL=fitness(42d), ATL=fatigue(7d), TSB=form(CTL-ATL)."
+        }
+    finally:
+        db.close()
+
+@router.get("/api/pmc")
+def api_pmc(days: int = Query(default=120, ge=7, le=1000)):
+    """
+    Return last N days of PMC (date, trimp, ctl, atl, tsb).
+    """
+    db = SessionLocal()
+    try:
+        rows = db.query(DailyPMC).order_by(desc(DailyPMC.day)).limit(days).all()
+        rows = list(reversed(rows))
+
+        out = []
+        for r in rows:
+            out.append({
+                "day": r.day.isoformat(),
+                "trimp": r.trimp,
+                "ctl": r.ctl,
+                "atl": r.atl,
+                "tsb": r.tsb,
+            })
+
+        return {"status": "ok", "count": len(out), "pmc": out}
+    finally:
+        db.close()
+
+@router.get("/api/status")
+def api_status():
+    """
+    Return latest CTL/ATL/TSB and 7-day changes.
+    """
+    db = SessionLocal()
+    try:
+        latest = db.query(DailyPMC).order_by(desc(DailyPMC.day)).first()
+        if not latest:
+            return {"status": "ok", "note": "No PMC data yet. Call /pmc/recompute."}
+
+        # 7 days ago (closest)
+        seven = db.query(DailyPMC).order_by(desc(DailyPMC.day)).offset(6).limit(1).first()
+        def d(x): return float(x) if x is not None else None
+
+        return {
+            "status": "ok",
+            "day": latest.day.isoformat(),
+            "ctl": d(latest.ctl),
+            "atl": d(latest.atl),
+            "tsb": d(latest.tsb),
+            "delta7_ctl": (d(latest.ctl) - d(seven.ctl)) if seven and latest.ctl is not None and seven.ctl is not None else None,
+            "delta7_atl": (d(latest.atl) - d(seven.atl)) if seven and latest.atl is not None and seven.atl is not None else None,
+            "delta7_tsb": (d(latest.tsb) - d(seven.tsb)) if seven and latest.tsb is not None and seven.tsb is not None else None,
+            "params": latest.params,
+            "labels": {"ctl": "Fitness", "atl": "Fatigue", "tsb": "Form"}
+        }
+    finally:
+        db.close()
+
+================================================================================
+FILE: backend/app/api/public_api.py
+================================================================================
+from fastapi import APIRouter, Query
+from datetime import datetime, timezone
+from sqlalchemy import desc
+
+from app.db.session import SessionLocal
+from app.db.models import Activity, ActivityMetric
+
+router = APIRouter()
+
+def _dt_to_iso(dt):
+    if not dt:
+        return None
+    try:
+        return dt.astimezone(timezone.utc).isoformat()
+    except Exception:
+        # if it's naive, treat as UTC
+        return dt.replace(tzinfo=timezone.utc).isoformat()
+
+@router.get("/api/activities")
+def api_activities(limit: int = Query(default=50, ge=1, le=500)):
+    """
+    Returns recent activities joined with derived metrics (if present).
+    """
+    db = SessionLocal()
+    try:
+        # newest first
+        acts = db.query(Activity).order_by(desc(Activity.start_date)).limit(limit).all()
+
+        # pull metrics in one go
+        ids = [a.id for a in acts]
+        metrics = {}
+        if ids:
+            ms = db.query(ActivityMetric).filter(ActivityMetric.activity_id.in_(ids)).all()
+            metrics = {m.activity_id: m for m in ms}
+
+        out = []
+        for a in acts:
+            m = metrics.get(a.id)
+            out.append({
+                "activity_id": int(a.id),
+                "start_date": _dt_to_iso(a.start_date),
+                "name": a.name,
+                "type": a.type,
+                "sport_type": a.sport_type,
+                "distance_km": (a.distance_m / 1000.0) if a.distance_m else None,
+                "moving_time_s": a.moving_time_s,
+                "avg_heartrate": a.average_heartrate,
+                "avg_pace_min_per_km": (m.avg_pace_s_per_km / 60.0) if (m and m.avg_pace_s_per_km) else None,
+                "efficiency_factor": m.efficiency_factor if m else None,
+                "elevation_rate_m_per_h": m.elevation_rate_m_per_h if m else None,
+            })
+        return {"status": "ok", "count": len(out), "activities": out}
+    finally:
+        db.close()
+
+@router.get("/api/metrics")
+def api_metrics(limit: int = Query(default=200, ge=1, le=2000)):
+    """
+    Returns EF time series (and pace/HR) joined with Activity start_date.
+    """
+    db = SessionLocal()
+    try:
+        q = (
+            db.query(ActivityMetric, Activity)
+              .join(Activity, Activity.id == ActivityMetric.activity_id)
+              .order_by(desc(Activity.start_date))
+              .limit(limit)
+        )
+        rows = q.all()
+
+        out = []
+        for m, a in rows:
+            out.append({
+                "activity_id": int(a.id),
+                "start_date": _dt_to_iso(a.start_date),
+                "distance_km": (a.distance_m / 1000.0) if a.distance_m else None,
+                "avg_heartrate": a.average_heartrate,
+                "avg_pace_min_per_km": (m.avg_pace_s_per_km / 60.0) if m.avg_pace_s_per_km else None,
+                "efficiency_factor": m.efficiency_factor,
+                "elevation_rate_m_per_h": m.elevation_rate_m_per_h,
+            })
+        return {"status": "ok", "count": len(out), "metrics": out}
+    finally:
+        db.close()
+
+================================================================================
+FILE: backend/app/api/recommendation.py
+================================================================================
+from fastapi import APIRouter, Query
+from datetime import datetime, timedelta, timezone
+import math
+
+from app.db.session import SessionLocal
+from app.db.models import Activity
+
+router = APIRouter()
+
+def ewma(vals, tau_days: int):
+    alpha = 1.0 - math.exp(-1.0 / float(tau_days))
+    out, ema = [], None
+    for v in vals:
+        ema = v if ema is None else (alpha*v + (1-alpha)*ema)
+        out.append(ema)
+    return out
+
+def hrmax_observed(acts):
+    vals = [a.max_heartrate for a in acts if a.max_heartrate]
+    return max(vals) if vals else 190.0
+
+def load_proxy_from_activity(a, hrmax):
+    if not a.moving_time_s:
+        return 0.0
+    dur_min = a.moving_time_s / 60.0
+    if a.average_heartrate and hrmax and hrmax &gt; 0:
+        x = (a.average_heartrate / hrmax)
+        return dur_min * (x*x) * 100.0
+    return dur_min * 35.0
+
+def load_proxy_from_workout(dur_min: float, intensity: float):
+    return dur_min * (intensity*intensity) * 100.0
+
+def simulate(hist_daily, add_load, days, tau_ctl=42, tau_atl=7):
+    future = [add_load] + [0.0]*(days-1)
+    seq = hist_daily + future
+    ctl = ewma(seq, tau_ctl)[-days:]
+    atl = ewma(seq, tau_atl)[-days:]
+    tsb = [c-a for c,a in zip(ctl, atl)]
+    return ctl, atl, tsb
+
+def assess(tsb_final):
+    if tsb_final &gt; -5: return "good"
+    if tsb_final &gt; -15: return "caution"
+    return "risky"
+
+@router.get("/api/recommendation")
+def recommendation(days: int = Query(default=7, ge=3, le=14)):
+    db = SessionLocal()
+    try:
+        acts = db.query(Activity).order_by(Activity.start_date.asc()).all()
+        acts = [a for a in acts if a.start_date and a.moving_time_s]
+        if not acts:
+            return {"status":"no_data"}
+
+        hrmax = hrmax_observed(acts)
+
+        end = datetime.now(timezone.utc).date()
+        start = end - timedelta(days=42-1)
+        daily = {(start + timedelta(days=i)): 0.0 for i in range(42)}
+        for a in acts:
+            d = a.start_date.date()
+            if d &lt; start or d &gt; end:
+                continue
+            daily[d] += load_proxy_from_activity(a, hrmax)
+
+        hist_daily = [daily[start + timedelta(days=i)] for i in range(42)]
+        ctl_hist = ewma(hist_daily, 42)
+        atl_hist = ewma(hist_daily, 7)
+        ctl0, atl0 = ctl_hist[-1], atl_hist[-1]
+
+        candidates = [
+            {"label":"Rest", "dur_min":0.0, "intensity":0.0},
+            {"label":"45 min Aerobic (Z2)", "dur_min":45.0, "intensity":0.65},
+            {"label":"60 min Steady", "dur_min":60.0, "intensity":0.72},
+            {"label":"45 min Tempo", "dur_min":45.0, "intensity":0.80},
+            {"label":"90 min Long Aerobic (Z2)", "dur_min":90.0, "intensity":0.65},
+        ]
+
+        scored = []
+        for c in candidates:
+            load = load_proxy_from_workout(c["dur_min"], c["intensity"])
+            ctl, atl, tsb = simulate(hist_daily, load, days)
+            scored.append({
+                **c,
+                "load_tomorrow": load,
+                "delta_ctl": ctl[-1]-ctl0,
+                "delta_atl": atl[-1]-atl0,
+                "delta_tsb": (ctl[-1]-atl[-1]) - (ctl0-atl0),
+                "tsb_final": tsb[-1],
+                "recommendation": assess(tsb[-1]),
+                "series": {"ctl": ctl, "atl": atl, "tsb": tsb},
+            })
+
+        scored.sort(key=lambda r: (r["tsb_final"], r["delta_ctl"]), reverse=True)
+        return {"status":"ok", "best": scored[0], "candidates": scored}
+    finally:
+        db.close()
+
+================================================================================
+FILE: backend/app/api/scenarios_dynamic.py
+================================================================================
+import math
+from datetime import datetime, timedelta, timezone
+from fastapi import APIRouter, Query
+from app.db.session import SessionLocal
+from app.db.models import Activity
+
+router = APIRouter()
+
+def _hrmax_observed(activities):
+    vals = [a.max_heartrate for a in activities if a.max_heartrate]
+    return float(max(vals)) if vals else 190.0
+
+def _banister_trimp(duration_min: float, hr_avg: float, hr_rest: float, hr_max: float, sex: str = "male") -&gt; float:
+    """
+    Banister TRIMP (HR-reserve):
+      TRIMP = duration_min * HRR * a * exp(b * HRR)
+    male: a=0.64, b=1.92
+    female: a=0.86, b=1.67
+    """
+    if duration_min &lt;= 0 or hr_avg is None:
+        return 0.0
+    if hr_max &lt;= hr_rest:
+        return 0.0
+
+    hrr = (float(hr_avg) - float(hr_rest)) / (float(hr_max) - float(hr_rest))
+    hrr = max(0.0, min(1.0, hrr))
+
+    sex = (sex or "male").lower()
+    if sex.startswith("f"):
+        a, b = 0.86, 1.67
+    else:
+        a, b = 0.64, 1.92
+
+    return float(duration_min * hrr * a * math.exp(b * hrr))
+
+def _ewma(values, tau_days: int):
+    alpha = 1.0 - math.exp(-1.0 / float(tau_days))
+    out = []
+    ema = None
+    for v in values:
+        ema = v if ema is None else (alpha * v + (1.0 - alpha) * ema)
+        out.append(ema)
+    return out
+
+def _load_from_activity(a, hrmax, hr_rest: float, sex: str):
+    """
+    TRIMP load from stored activity. Conservative fallback if HR missing.
+    """
+    if not a.moving_time_s:
+        return 0.0
+    dur_min = float(a.moving_time_s) / 60.0
+
+    if a.average_heartrate and hrmax and hrmax &gt; 0:
+        return _banister_trimp(dur_min, float(a.average_heartrate), hr_rest, float(hrmax), sex)
+
+    # conservative fallback: assume easy aerobic HRR ~ 0.60 and downscale
+    if hrmax and hrmax &gt; hr_rest:
+        hr_avg_est = hr_rest + 0.60 * (float(hrmax) - float(hr_rest))
+        return 0.60 * _banister_trimp(dur_min, hr_avg_est, hr_rest, float(hrmax), sex)
+
+    return 0.0
+
+def _load_for_planned(dur_min: float, intensity_frac_hrmax: float, hrmax: float, hr_rest: float, sex: str) -&gt; float:
+    """
+    Planned workout TRIMP from (duration, intensity as fraction of HRmax).
+    """
+    hr_avg = float(intensity_frac_hrmax) * float(hrmax)
+    return _banister_trimp(float(dur_min), hr_avg, hr_rest, float(hrmax), sex)
+
+def _label(tsb_final: float) -&gt; str:
+    if tsb_final &gt; -5:
+        return "good"
+    if tsb_final &gt; -15:
+        return "caution"
+    return "risky"
+
+@router.get("/api/scenarios_dynamic")
+def scenarios_dynamic(
+    days: int = Query(default=7, ge=3, le=14),
+    dur_min: float = Query(default=45.0, ge=5.0, le=240.0),
+    intensity: float = Query(default=0.65, ge=0.40, le=0.98),
+    hr_rest: float = Query(default=50.0, ge=30.0, le=100.0),
+    sex: str = Query(default="male"),
+):
+    """
+    TRIMP-consistent scenario projection:
+    - builds a 42-day TRIMP history from stored activities
+    - simulates one planned workout tomorrow, then zeros for rest of horizon
+    Returns schema compatible with existing frontend: {"status":"ok","scenarios":[...], ...}
+    """
+    db = SessionLocal()
+    try:
+        acts = db.query(Activity).order_by(Activity.start_date.asc()).all()
+        acts = [a for a in acts if a.start_date and a.moving_time_s]
+        if not acts:
+            return {"status": "no_data"}
+
+        hrmax = _hrmax_observed(acts)
+
+        # Build 42-day history
+        end = datetime.now(timezone.utc).date()
+        start = end - timedelta(days=42 - 1)
+        daily = {(start + timedelta(days=i)): 0.0 for i in range(42)}
+
+        for a in acts:
+            d = a.start_date.astimezone(timezone.utc).date() if a.start_date.tzinfo else a.start_date.date()
+            if d &lt; start or d &gt; end:
+                continue
+            daily[d] += _load_from_activity(a, hrmax, hr_rest, sex)
+
+        hist_dates = [start + timedelta(days=i) for i in range(42)]
+        hist_load = [daily[d] for d in hist_dates]
+
+        # Baseline today
+        ctl_hist = _ewma(hist_load, 42)
+        atl_hist = _ewma(hist_load, 7)
+        ctl0 = ctl_hist[-1]
+        atl0 = atl_hist[-1]
+        tsb0 = ctl0 - atl0
+
+        # Candidate set: Rest, Custom (slider), Alt (slightly easier/harder)
+        load_rest = 0.0
+        load_custom = _load_for_planned(dur_min, intensity, hrmax, hr_rest, sex)
+
+        if intensity &gt;= 0.80:
+            alt_intensity = max(0.55, intensity - 0.12)
+        else:
+            alt_intensity = min(0.85, intensity + 0.10)
+        load_alt = _load_for_planned(dur_min, alt_intensity, hrmax, hr_rest, sex)
+
+        candidates = [
+            ("Rest", 0.0, 0.0, load_rest),
+            ("Custom", float(dur_min), float(intensity), load_custom),
+            ("Alt", float(dur_min), float(alt_intensity), load_alt),
+        ]
+
+        scenarios = []
+        for name, dmin, inten, add_load in candidates:
+            seq = hist_load + [add_load] + [0.0] * (days - 1)
+            ctl = _ewma(seq, 42)[-days:]
+            atl = _ewma(seq, 7)[-days:]
+            tsb = [c - a for c, a in zip(ctl, atl)]
+            scenarios.append({
+                "name": name,
+                "dur_min": dmin,
+                "intensity": inten,
+                "load_tomorrow": add_load,
+                "delta_ctl": ctl[-1] - ctl0,
+                "delta_atl": atl[-1] - atl0,
+                "delta_tsb": (tsb[-1] - tsb0),
+                "recommendation": _label(tsb[-1]),
+                "series": {"ctl": ctl, "atl": atl, "tsb": tsb},
+            })
+
+        # rank: prefer higher final freshness, then higher ctl
+        scenarios.sort(key=lambda r: (r["series"]["tsb"][-1], r["series"]["ctl"][-1]), reverse=True)
+
+        return {
+            "status": "ok",
+            "days": days,
+            "hrmax_observed": hrmax,
+            "hr_rest": hr_rest,
+            "sex": sex,
+            "baseline": {"ctl": ctl0, "atl": atl0, "tsb": tsb0},
+            "scenarios": scenarios,
+        }
+    finally:
+        db.close()
+
+================================================================================
+FILE: backend/app/api/strava_oauth.py
+================================================================================
+from fastapi import APIRouter, Request
+from fastapi.responses import RedirectResponse
+import os
+import requests
+
+from app.db.session import SessionLocal
+from app.db.models import StravaToken
+
+router = APIRouter()
+
+STRAVA_CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
+STRAVA_CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET")
+REDIRECT_URI = "https://runmetrics.onrender.com/auth/strava/callback"
+
+@router.get("/auth/strava/login")
+def strava_login():
+    if not STRAVA_CLIENT_ID or not STRAVA_CLIENT_SECRET:
+        return {"error": "STRAVA_CLIENT_ID/STRAVA_CLIENT_SECRET not set in environment"}
+
+    auth_url = (
+        "https://www.strava.com/oauth/authorize"
+        f"?client_id={STRAVA_CLIENT_ID}"
+        f"&amp;redirect_uri={REDIRECT_URI}"
+        "&amp;response_type=code"
+        "&amp;approval_prompt=auto"
+        "&amp;scope=read,activity:read_all"
+    )
+    return RedirectResponse(auth_url)
+
+@router.get("/auth/strava/callback")
+def strava_callback(request: Request):
+    code = request.query_params.get("code")
+    if not code:
+        return {"error": "Missing code from Strava redirect"}
+
+    resp = requests.post(
+        "https://www.strava.com/api/v3/oauth/token",
+        data={
+            "client_id": STRAVA_CLIENT_ID,
+            "client_secret": STRAVA_CLIENT_SECRET,
+            "code": code,
+            "grant_type": "authorization_code",
+        },
+        timeout=30,
+    )
+    data = resp.json()
+
+    if "athlete" not in data or "access_token" not in data or "refresh_token" not in data:
+        return {"error": "Token exchange failed", "response": data}
+
+    athlete_id = data["athlete"]["id"]
+
+    db = SessionLocal()
+    try:
+        token = db.query(StravaToken).filter(StravaToken.athlete_id == athlete_id).first()
+        if token:
+            token.access_token = data["access_token"]
+            token.refresh_token = data["refresh_token"]
+            token.expires_at = data["expires_at"]
+        else:
+            token = StravaToken(
+                athlete_id=athlete_id,
+                access_token=data["access_token"],
+                refresh_token=data["refresh_token"],
+                expires_at=data["expires_at"],
+            )
+            db.add(token)
+        db.commit()
+    finally:
+        db.close()
+
+    return {"status": "authorised_and_stored"}
+
+================================================================================
+FILE: backend/app/api/streams.py
+================================================================================
+from fastapi import APIRouter, Query
+from datetime import datetime, timezone
+import os
+import requests
+
+from app.db.session import SessionLocal
+from app.db.models import StravaToken, Activity, ActivityStream
+
+router = APIRouter()
+
+STRAVA_CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
+STRAVA_CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET")
+
+def _refresh_if_needed(db, token: StravaToken) -&gt; StravaToken:
+    now = int(datetime.now(timezone.utc).timestamp())
+    if token.expires_at and now &lt; (token.expires_at - 60):
+        return token
+
+    resp = requests.post(
+        "https://www.strava.com/api/v3/oauth/token",
+        data={
+            "client_id": STRAVA_CLIENT_ID,
+            "client_secret": STRAVA_CLIENT_SECRET,
+            "grant_type": "refresh_token",
+            "refresh_token": token.refresh_token,
+        },
+        timeout=30,
+    )
+    data = resp.json()
+    if "access_token" not in data or "refresh_token" not in data or "expires_at" not in data:
+        raise RuntimeError(f"Token refresh failed: {data}")
+
+    token.access_token = data["access_token"]
+    token.refresh_token = data["refresh_token"]
+    token.expires_at = data["expires_at"]
+    db.commit()
+    return token
+
+def _parse_after(after: str | None):
+    if not after:
+        return None
+    # interpret YYYY-MM-DD as UTC midnight
+    dt = datetime.fromisoformat(after).replace(tzinfo=timezone.utc)
+    return dt
+
+@router.get("/strava/streams")
+def ingest_streams(
+    after: str | None = Query(default=None, description="ISO date like 2026-01-01; select activities after this date (UTC)."),
+    max_activities: int = Query(default=25, ge=1, le=200, description="Max activities to fetch streams for in this call."),
+    include_latlng: bool = Query(default=False, description="Include lat/lng stream (large)."),
+):
+    """
+    Fetch streams for activities in DB (after=...) that do not yet have streams stored.
+    Stores one JSONB blob per activity (key_by_type=true).
+    """
+    if not STRAVA_CLIENT_ID or not STRAVA_CLIENT_SECRET:
+        return {"error": "STRAVA_CLIENT_ID/STRAVA_CLIENT_SECRET not set"}
+
+    after_dt = _parse_after(after)
+
+    db = SessionLocal()
+    try:
+        token = db.query(StravaToken).order_by(StravaToken.id.desc()).first()
+        if not token:
+            return {"error": "No stored Strava token found. Visit /auth/strava/login first."}
+
+        token = _refresh_if_needed(db, token)
+        headers = {"Authorization": f"Bearer {token.access_token}"}
+
+        # Find candidate activities missing streams
+        q = db.query(Activity).order_by(Activity.start_date.desc())
+        if after_dt:
+            q = q.filter(Activity.start_date &gt;= after_dt)
+
+        # Only ones not already in activity_streams
+        candidates = []
+        for a in q.limit(1000).all():
+            if db.get(ActivityStream, a.id) is None:
+                candidates.append(a)
+            if len(candidates) &gt;= max_activities:
+                break
+
+        if not candidates:
+            return {"status": "ok", "after": after, "considered": 0, "fetched": 0, "inserted": 0, "note": "No missing streams found."}
+
+        base_keys = ["time", "distance", "altitude", "velocity_smooth", "grade_smooth", "cadence", "heartrate"]
+        if include_latlng:
+            base_keys.append("latlng")
+
+        fetched = 0
+        inserted = 0
+        errors = 0
+
+        for a in candidates:
+            url = f"https://www.strava.com/api/v3/activities/{int(a.id)}/streams"
+            params = {"keys": ",".join(base_keys), "key_by_type": "true"}
+            r = requests.get(url, headers=headers, params=params, timeout=45)
+
+            if r.status_code != 200:
+                errors += 1
+                # keep going; record a minimal failure payload for later inspection
+                payload = {"error": True, "status_code": r.status_code, "text": r.text[:2000]}
+                stream = ActivityStream(
+                    activity_id=int(a.id),
+                    athlete_id=int(a.athlete_id),
+                    fetched_at=datetime.now(timezone.utc),
+                    keys=base_keys,
+                    raw=payload,
+                )
+                db.add(stream)
+                db.commit()
+                inserted += 1
+                continue
+
+            data = r.json()
+            fetched += 1
+
+            stream = ActivityStream(
+                activity_id=int(a.id),
+                athlete_id=int(a.athlete_id),
+                fetched_at=datetime.now(timezone.utc),
+                keys=base_keys,
+                raw=data,
+            )
+            db.add(stream)
+            db.commit()
+            inserted += 1
+
+        return {
+            "status": "ok",
+            "after": after,
+            "considered": len(candidates),
+            "fetched": fetched,
+            "inserted": inserted,
+            "errors": errors,
+            "note": "Safe to re-run; only missing streams are fetched (existing are skipped).",
+        }
+    finally:
+        db.close()
+
+================================================================================
+FILE: backend/app/api/zone_effort.py
+================================================================================
+from fastapi import APIRouter, Query
+from datetime import datetime, timedelta, timezone
+from collections import defaultdict
+
+from app.db.session import SessionLocal
+from app.db.models import Activity, ActivityStream
+from app.api.physiology import estimate_zone_thresholds, estimate_hrmax
+
+router = APIRouter()
+
+@router.get("/api/zone_effort")
+def zone_effort(weeks: int = Query(default=1, ge=1, le=8)):
+    db = SessionLocal()
+    try:
+        acts = db.query(Activity).all()
+        hrmax = estimate_hrmax(acts)
+        zones = estimate_zone_thresholds(acts, hrmax)
+        if not zones:
+            return {"status": "insufficient_data"}
+
+        end = datetime.now(timezone.utc)
+        start = end - timedelta(days=7*weeks)
+
+        zone_minutes = defaultdict(float)
+
+        streams = (
+            db.query(ActivityStream)
+            .join(Activity, Activity.id == ActivityStream.activity_id)
+            .filter(Activity.start_date &gt;= start)
+            .all()
+        )
+
+        for s in streams:
+            data = s.raw
+            if not data or "heartrate" not in data or "time" not in data:
+                continue
+
+            hr = data["heartrate"]["data"]
+            t = data["time"]["data"]
+
+            for i in range(1, len(t)):
+                dt = t[i] - t[i-1]
+                h = hr[i]
+                for z, (lo, hi) in zones["zones"].items():
+                    if lo &lt;= h &lt; hi:
+                        zone_minutes[z] += dt / 60.0
+                        break
+
+        # simple goals (can refine later)
+        goals = {"Z1": 60, "Z2": 180, "Z3": 60, "Z4": 20, "Z5": 10}
+
+        out = {}
+        for z in zones["zones"]:
+            m = zone_minutes.get(z, 0.0)
+            g = goals.get(z, 60)
+            out[z] = {
+                "minutes": round(m, 1),
+                "goal": g,
+                "fraction": round(m / g, 2) if g else None
+            }
+
+        return {
+            "status": "ok",
+            "weeks": weeks,
+            "zones": out,
+            "note": "Time-in-zone computed from HR streams using data-derived thresholds."
+        }
+    finally:
+        db.close()
+
+================================================================================
+FILE: backend/app/api/zones_history.py
+================================================================================
+from fastapi import APIRouter, Query
+from datetime import datetime, timedelta, timezone
+
+from app.db.session import SessionLocal
+from app.db.models import Activity
+from app.api.physiology import estimate_zone_thresholds, estimate_hrmax
+
+router = APIRouter()
+
+@router.get("/api/zones_history")
+def zones_history(days_ago: int = Query(default=30, ge=7, le=180)):
+    """
+    Estimate zones using activities up to (today - days_ago).
+    This is a simple 'as-of' snapshot to show direction of change.
+    """
+    db = SessionLocal()
+    try:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days_ago)
+        acts = db.query(Activity).filter(Activity.start_date &lt;= cutoff).all()
+        hrmax = estimate_hrmax(acts)
+        est = estimate_zone_thresholds(acts, hrmax)
+        if not est:
+            return {"status":"insufficient_data", "days_ago": days_ago}
+        return {"status":"ok", "days_ago": days_ago, **est}
+    finally:
+        db.close()
+
+================================================================================
+FILE: backend/app/config.py
+================================================================================
+import os
+
+APP_ENV = os.getenv("APP_ENV", "development")
+
+================================================================================
+FILE: backend/app/db/__init__.py
+================================================================================
+
+================================================================================
+FILE: backend/app/db/models.py
+================================================================================
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Integer, String, BigInteger, Float, Boolean, DateTime, Date
+from sqlalchemy.dialects.postgresql import JSONB
+
+from app.db.session import Base
+
+class StravaToken(Base):
+    __tablename__ = "strava_tokens"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    athlete_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
+    access_token: Mapped[str] = mapped_column(String, nullable=False)
+    refresh_token: Mapped[str] = mapped_column(String, nullable=False)
+    expires_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+
+class Activity(Base):
+    __tablename__ = "activities"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)  # Strava activity id
+    athlete_id: Mapped[int] = mapped_column(BigInteger, index=True)
+
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
+    type: Mapped[str | None] = mapped_column(String, nullable=True)
+    sport_type: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    start_date: Mapped[object | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    distance_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+    moving_time_s: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    elapsed_time_s: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_elevation_gain_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    average_speed_mps: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_speed_mps: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    average_heartrate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_heartrate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    has_heartrate: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+
+    private: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+class ActivityStream(Base):
+    __tablename__ = "activity_streams"
+    activity_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    athlete_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    fetched_at: Mapped[object | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    keys: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+class ActivityMetric(Base):
+    __tablename__ = "activity_metrics"
+    activity_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    athlete_id: Mapped[int] = mapped_column(BigInteger, index=True)
+
+    distance_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+    moving_time_s: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    avg_pace_s_per_km: Mapped[float | None] = mapped_column(Float, nullable=True)
+    avg_heartrate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    elevation_rate_m_per_h: Mapped[float | None] = mapped_column(Float, nullable=True)
+    efficiency_factor: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+class DailyPMC(Base):
+    """
+    TrainingPeaks-style Performance Management Chart daily values.
+    trimp is the daily load input; ctl/atl are EWMAs (42d/7d), tsb = ctl - atl. 【1-3cfbf7】【3-dc96f1】
+    """
+    __tablename__ = "daily_pmc"
+    day: Mapped[object] = mapped_column(Date, primary_key=True)
+    athlete_id: Mapped[int] = mapped_column(BigInteger, index=True)
+
+    trimp: Mapped[float | None] = mapped_column(Float, nullable=True)  # daily training load input
+    ctl: Mapped[float | None] = mapped_column(Float, nullable=True)    # 42-day EWMA (fitness) 【1-3cfbf7】【3-dc96f1】
+    atl: Mapped[float | None] = mapped_column(Float, nullable=True)    # 7-day EWMA (fatigue) 【2-9f46da】【3-dc96f1】
+    tsb: Mapped[float | None] = mapped_column(Float, nullable=True)    # ctl - atl (form) 【2-9f46da】【1-3cfbf7】
+
+    computed_at: Mapped[object | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    params: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+================================================================================
+FILE: backend/app/db/session.py
+================================================================================
+import os
+import sys
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    print("FATAL: DATABASE_URL is not set (set it in Render env vars).", file=sys.stderr)
+    raise RuntimeError("DATABASE_URL is not set")
+
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+SessionLocal = sessionmaker(bind=engine)
+
+class Base(DeclarativeBase):
+    pass
+
+================================================================================
+FILE: backend/app/main.py
+================================================================================
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.db.session import engine, Base
+from app.db import models as _models  # noqa: F401 register tables
+
+# Routers
+from app.api.health import router as health_router
+from app.api.ping import router as ping_router
+from app.api.strava_oauth import router as strava_oauth_router
+from app.api.ingest import router as ingest_router
+from app.api.streams import router as streams_router
+from app.api.metrics import router as metrics_router
+from app.api.analytics import router as analytics_router
+from app.api.physiology import router as phys_router
+from app.api.zone_effort import router as zone_effort_router
+from app.api.scenarios_dynamic import router as scenarios_dynamic_router
+from app.api.zones_history import router as zones_history_router
+
+app = FastAPI(title="RunMetrics", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
+
+Base.metadata.create_all(bind=engine)
+
+app.include_router(health_router)
+app.include_router(ping_router)
+app.include_router(strava_oauth_router)
+app.include_router(ingest_router)
+app.include_router(streams_router)
+app.include_router(metrics_router)
+app.include_router(analytics_router)
+app.include_router(phys_router)
+app.include_router(zone_effort_router)
+app.include_router(scenarios_dynamic_router)
+app.include_router(zones_history_router)
+
+from app.api.recommendation import router as recommendation_router
+app.include_router(recommendation_router)
+
+================================================================================
+FILE: backend/render.yaml
+================================================================================
+services:
+  - type: web
+    name: runmetrics-backend
+    env: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m uvicorn app.main:app --app-dir . --host 0.0.0.0 --port 10000
+
+================================================================================
+FILE: backend/requirements.txt
+================================================================================
+fastapi==0.110.0
+uvicorn==0.29.0
+requests==2.32.3
+sqlalchemy==2.0.29
+psycopg2-binary==2.9.9
+
+================================================================================
+FILE: check_backend_structure.sh
+================================================================================
+#!/usr/bin/env bash
+set -e
+ROOT="backend/app"
+check() { [[ -e "$1" ]] || { echo "❌ Missing $1"; exit 1; }; }
+check backend/app/main.py
+check backend/app/api/analytics.py
+check web/index.html
+check web/script.js
+echo "✅ Basic checks passed."
+
+================================================================================
+FILE: docs/app.js
+================================================================================
+/* RunMetrics static dashboard renderer
+   - STATIC ONLY: reads docs/data/*.json
+   - No backend/API calls
+*/
+(function () {
+  "use strict";
+
+  const DATA_DIR = "data"; // relative to docs/
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function fmt(x, dp) {
+    const n = Number(x);
+    if (x === null || x === undefined || Number.isNaN(n)) return "–";
+    return n.toFixed(dp ?? 1);
+  }
+
+  async function fetchJSON(path) {
+    const url = `${DATA_DIR}/${path}`;
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText} for ${url}`);
+    return r.json();
+  }
+
+  function darkLayout(overrides) {
+    const base = {
+      paper_bgcolor: "#0f1117",
+      plot_bgcolor: "#0f1117",
+      font: { color: "#e9eef6" },
+      xaxis: { gridcolor: "#1f2430", zerolinecolor: "#1f2430" },
+      yaxis: { gridcolor: "#1f2430", zerolinecolor: "#1f2430" },
+      margin: { t: 20, r: 10, l: 60, b: 45 }
+    };
+    return Object.assign({}, base, overrides || {});
+  }
+
+  function plotLoad(series, generatedAt) {
+    const el = byId("load_plot");
+    const meta = byId("load_meta");
+    if (!el || !window.Plotly) return;
+
+    const s = Array.isArray(series) ? series.slice(-140) : [];
+    if (!s.length) {
+      if (meta) meta.textContent = "No load series found.";
+      return;
+    }
+
+    const x = s.map(p =&gt; p.date);
+    const ctl = s.map(p =&gt; p.ctl);
+    const atl = s.map(p =&gt; p.atl);
+    const tsb = s.map(p =&gt; p.tsb);
+    const daily = s.map(p =&gt; (p.daily_load ?? 0));
+
+    const traces = [
+      { x, y: daily, type: "bar", name: "Daily load", marker: { color: "#2a3242" }, opacity: 0.55 },
+      { x, y: ctl, type: "scatter", mode: "lines", name: "Fitness (CTL)", line: { color: "#6aa9ff", width: 3 } },
+      { x, y: atl, type: "scatter", mode: "lines", name: "Fatigue (ATL)", line: { color: "#ff6b6b", width: 3 } },
+      { x, y: tsb, type: "scatter", mode: "lines", name: "Form (TSB)", line: { color: "#3ddc97", width: 2 } }
+    ];
+
+    window.Plotly.newPlot(
+      el,
+      traces,
+      darkLayout({
+        barmode: "overlay",
+        yaxis: { gridcolor: "#1f2430", title: "load units" },
+        xaxis: { gridcolor: "#1f2430", title: "date" },
+        legend: { orientation: "h" }
+      }),
+      { displayModeBar: false, responsive: true }
+    );
+
+    if (meta) {
+      meta.textContent = generatedAt
+        ? `Data generated: ${generatedAt} · Showing last ${s.length} days`
+        : `Showing last ${s.length} days`;
+    }
+  }
+
+  function plotWeekly(weeks) {
+    const el = byId("weekly_plot");
+    if (!el || !window.Plotly) return;
+
+    const w = Array.isArray(weeks) ? weeks.slice(-26) : [];
+    if (!w.length) return;
+
+    const x = w.map(p =&gt; p.week_start);
+    const y = w.map(p =&gt; p.distance_km);
+
+    window.Plotly.newPlot(
+      el,
+      [{ x, y, type: "bar", name: "Distance (km)", marker: { color: "#3ddc97" } }],
+      darkLayout({
+        xaxis: { gridcolor: "#1f2430", title: "week start" },
+        yaxis: { gridcolor: "#1f2430", title: "km" },
+        showlegend: false,
+        margin: { t: 20, r: 10, l: 55, b: 60 }
+      }),
+      { displayModeBar: false, responsive: true }
+    );
+  }
+
+  function renderRecent(items) {
+    const el = byId("recent_list");
+    if (!el) return;
+
+    const arr = Array.isArray(items) ? items.slice(0, 25) : [];
+    if (!arr.length) {
+      el.textContent = "No recent activities.";
+      return;
+    }
+
+    // Render as plain text for safety/robustness
+    const lines = arr.map(a =&gt; {
+      const d = (a.date ? String(a.date).slice(0, 10) : "—");
+      const name = a.name || "Activity";
+      const dist = a.distance_km === null || a.distance_km === undefined ? "–" : `${fmt(a.distance_km, 1)} km`;
+      const pace = a.pace_min_per_km === null || a.pace_min_per_km === undefined ? "–" : `${fmt(a.pace_min_per_km, 2)} min/km`;
+      const hr = a.avg_hr === null || a.avg_hr === undefined ? "–" : `${Math.round(a.avg_hr)} bpm`;
+      return `${d} — ${name} (${dist}, ${pace}, HR ${hr})`;
+    });
+
+    el.textContent = lines.join("\n");
+  }
+
+  function renderInsights(ins) {
+    const el = byId("insights");
+    if (!el || !ins || ins.status !== "ok") return;
+
+    const acwr = ins.acwr === null || ins.acwr === undefined ? "–" : Number(ins.acwr).toFixed(2);
+    const notes = Array.isArray(ins.lower_leg_risk_notes) ? ins.lower_leg_risk_notes : [];
+
+    const parts = [
+      `Trend: ${ins.trend ?? "–"}`,
+      `Freshness: ${ins.freshness ?? "–"}`,
+      `ACWR: ${acwr}`,
+      `Lower-leg risk: ${ins.lower_leg_risk_level ?? "–"}`
+    ];
+
+    if (ins.note) parts.push(String(ins.note));
+    if (notes.length) parts.push(`Notes: ${notes.join(" · ")}`);
+
+    el.textContent = parts.join(" | ");
+  }
+
+  async function boot() {
+    // Each panel loads independently so partial data still works.
+    fetchJSON("load_365.json")
+      .then(j =&gt; plotLoad(j.series, j.generated_at))
+      .catch(err =&gt; console.warn("load_365.json missing or invalid:", err.message));
+
+    fetchJSON("weekly_16.json")
+      .then(j =&gt; plotWeekly(j.weeks))
+      .catch(err =&gt; console.warn("weekly_16.json missing or invalid:", err.message));
+
+    fetchJSON("recent_50.json")
+      .then(j =&gt; renderRecent(j.items))
+      .catch(err =&gt; console.warn("recent_50.json missing or invalid:", err.message));
+
+    fetchJSON("insights.json")
+      .then(j =&gt; renderInsights(j))
+      .catch(err =&gt; console.warn("insights.json missing or invalid:", err.message));
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+
+================================================================================
+FILE: docs/data/insights.json
+================================================================================
+{
+  "status": "ok",
+  "trend": "rising",
+  "freshness": "fatigued",
+  "ctl": 3.0541146357517683,
+  "atl": 14.127778350747025,
+  "tsb": -11.073663714995257,
+  "load7_avg_per_day": 19.229476088516783,
+  "load28_avg_per_day": 4.807369022129196,
+  "acute_7d": 134.6063326196175,
+  "chronic_28d_weekly": 33.65158315490437,
+  "acwr": 4.0,
+  "days_trained_7": 1,
+  "lower_leg_risk_level": "high",
+  "lower_leg_risk_notes": [
+    "Very aggressive ramp (ACWR &gt; 1.6)"
+  ],
+  "note": "Insights are informational only; interpret directionally."
+}
+================================================================================
+FILE: docs/data/load_365.json
+================================================================================
+{
+  "status": "ok",
+  "generated_at": "2026-05-07T07:34:04.656851+00:00",
+  "hrmax": 166.0,
+  "hr_rest": 50.0,
+  "sex": "male",
+  "hr_missing_sessions_in_window": 0,
+  "series": [
+    {
+      "date": "2025-05-08",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-09",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-10",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-11",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-12",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-13",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-14",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-15",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-16",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-17",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-18",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-19",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-20",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-21",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-22",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-23",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-24",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-25",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-26",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-27",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-28",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-29",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-30",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-05-31",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-01",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-02",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-03",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-04",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-05",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-06",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-07",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-08",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-09",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-10",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-11",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-12",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-13",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-14",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-15",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-16",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-17",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-18",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-19",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-20",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-21",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-22",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-23",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-24",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-25",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-26",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-27",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-28",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-29",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-06-30",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-01",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-02",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-03",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-04",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-05",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-06",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-07",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-08",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-09",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-10",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-11",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-12",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-13",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-14",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-15",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-16",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-17",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-18",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-19",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-20",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-21",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-22",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-23",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-24",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-25",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-26",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-27",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-28",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-29",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-30",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-07-31",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-01",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-02",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-03",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-04",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-05",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-06",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-07",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-08",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-09",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-10",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-11",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-12",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-13",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-14",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-15",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-16",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-17",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-18",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-19",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-20",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-21",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-22",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-23",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-24",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-25",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-26",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-27",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-28",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-29",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-30",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-08-31",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-01",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-02",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-03",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-04",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-05",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-06",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-07",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-08",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-09",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-10",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-11",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-12",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-13",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-14",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-15",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-16",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-17",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-18",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-19",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-20",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-21",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-22",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-23",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-24",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-25",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-26",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-27",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-28",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-29",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-09-30",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-01",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-02",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-03",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-04",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-05",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-06",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-07",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-08",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-09",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-10",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-11",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-12",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-13",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-14",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-15",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-16",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-17",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-18",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-19",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-20",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-21",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-22",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-23",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-24",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-25",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-26",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-27",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-28",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-29",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-30",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-10-31",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-01",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-02",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-03",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-04",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-05",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-06",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-07",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-08",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-09",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-10",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-11",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-12",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-13",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-14",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-15",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-16",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-17",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-18",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-19",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-20",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-21",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-22",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-23",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-24",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-25",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-26",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-27",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-28",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-29",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-11-30",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-01",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-02",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-03",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-04",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-05",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-06",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-07",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-08",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-09",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-10",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-11",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-12",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-13",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-14",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-15",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-16",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-17",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-18",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-19",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-20",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-21",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-22",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-23",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-24",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-25",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-26",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-27",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-28",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-29",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-30",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2025-12-31",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-01",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-02",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-03",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-04",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-05",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-06",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-07",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-08",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-09",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-10",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-11",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-12",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-13",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-14",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-15",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-16",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-17",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-18",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-19",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-20",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-21",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-22",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-23",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-24",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-25",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-26",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-27",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-28",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-29",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-30",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-01-31",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-01",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-02",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-03",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-04",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-05",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-06",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-07",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-08",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-09",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-10",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-11",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-12",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-13",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-14",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-15",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-16",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-17",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-18",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-19",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-20",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-21",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-22",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-23",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-24",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-25",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-26",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-27",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-02-28",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-01",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-02",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-03",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-04",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-05",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-06",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-07",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-08",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-09",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-10",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-11",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-12",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-13",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-14",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-15",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-16",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-17",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-18",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-19",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-20",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-21",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-22",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-23",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-24",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-25",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-26",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-27",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-28",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-29",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-30",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-03-31",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-01",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-02",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-03",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-04",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-05",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-06",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-07",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-08",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-09",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-10",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-11",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-12",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-13",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-14",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-15",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-16",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-17",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-18",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-19",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-20",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-21",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-22",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-23",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-24",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-25",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-26",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-27",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-28",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-29",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-04-30",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-05-01",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-05-02",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-05-03",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-05-04",
+      "daily_load": 0.0,
+      "ctl": 0.0,
+      "atl": 0.0,
+      "tsb": 0.0
+    },
+    {
+      "date": "2026-05-05",
+      "daily_load": 134.6063326196175,
+      "ctl": 3.204912681419464,
+      "atl": 19.229476088516783,
+      "tsb": -16.024563407097318
+    },
+    {
+      "date": "2026-05-06",
+      "daily_load": 0.0,
+      "ctl": 3.1286052366237627,
+      "atl": 16.48240807587153,
+      "tsb": -13.353802839247766
+    },
+    {
+      "date": "2026-05-07",
+      "daily_load": 0.0,
+      "ctl": 3.0541146357517683,
+      "atl": 14.127778350747025,
+      "tsb": -11.073663714995257
+    }
+  ]
+}
+================================================================================
+FILE: docs/data/meta.json
+================================================================================
+{
+  "status": "ok",
+  "generated_at": "2026-05-06T14:45:00.598512+00:00",
+  "counts": {
+    "activities_total": 43,
+    "recent_items": 43,
+    "series_days": 365
+  }
+}
+================================================================================
+FILE: docs/data/recent.json
+================================================================================
+{
+  "status": "ok",
+  "generated_at": "2026-05-07T07:34:04.667016+00:00",
+  "items": [
+    {
+      "id": 18381460606,
+      "date": "2026-05-05T06:11:23+00:00",
+      "name": "Morning Run",
+      "sport_type": "Run",
+      "distance_km": 10.1827,
+      "moving_time_min": 46.36666666666667,
+      "avg_hr": 150.2,
+      "max_hr": 166.0,
+      "pace_min_per_km": 4.553474684186578,
+      "elev_gain_m": 148.1
+    }
+  ]
+}
+================================================================================
+FILE: docs/data/weekly.json
+================================================================================
+{
+  "status": "ok",
+  "generated_at": "2026-05-07T07:34:04.657002+00:00",
+  "weeks": [
+    {
+      "week_start": "2026-01-19",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-01-26",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-02-02",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-02-09",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-02-16",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-02-23",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-03-02",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-03-09",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-03-16",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-03-23",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-03-30",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-04-06",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-04-13",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-04-20",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-04-27",
+      "distance_km": 0.0
+    },
+    {
+      "week_start": "2026-05-04",
+      "distance_km": 10.18
+    }
+  ]
+}
+================================================================================
+FILE: docs/data/zone_effort_1w.json
+================================================================================
+{
+  "status": "ok",
+  "generated_at": "2026-05-06T14:45:00.590381+00:00",
+  "days": 7,
+  "zones": {
+    "Z1": {
+      "minutes": 0
+    },
+    "Z2": {
+      "minutes": 164
+    },
+    "Z3": {
+      "minutes": 0
+    },
+    "Z4": {
+      "minutes": 0
+    },
+    "Z5": {
+      "minutes": 0
+    }
+  }
+}
+================================================================================
+FILE: docs/data/zones.json
+================================================================================
+{
+  "status": "ok",
+  "generated_at": "2026-05-06T14:45:00.590356+00:00",
+  "hrmax": 192.0,
+  "lt1_hr": 159.35999999999999,
+  "lt2_hr": 168.96,
+  "note": "Zone thresholds are heuristic fractions of observed HRmax for offline static publishing."
+}
+================================================================================
+FILE: docs/favicon.ico
+================================================================================
+
+================================================================================
+FILE: docs/index.html
+================================================================================
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en-GB"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"&gt;
+  &lt;title&gt;RunMetrics&lt;/title&gt;
+  &lt;link rel="stylesheet" href="style.css"&gt;
+  &lt;script src="https://cdn.plot.ly/plotly-2.30.0.min.js"&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;header class="top"&gt;
+  &lt;div&gt;
+    &lt;h1&gt;🏃 RunMetrics&lt;/h1&gt;
+    &lt;div class="sub"&gt;Static dashboard (local build → GitHub Pages)&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/header&gt;
+
+&lt;section class="card"&gt;
+  &lt;h2&gt;Training load (CTL / ATL / TSB)&lt;/h2&gt;
+  &lt;p class="explain"&gt;CTL = long‑term load (fitness) · ATL = short‑term load (fatigue) · TSB = form (CTL−ATL)&lt;/p&gt;
+  &lt;div id="load_plot" class="plot"&gt;&lt;/div&gt;
+  &lt;div id="load_meta" class="small muted"&gt;&lt;/div&gt;
+&lt;/section&gt;
+
+&lt;section class="card"&gt;
+  &lt;h2&gt;Progress &amp; injury guardrails&lt;/h2&gt;
+  &lt;div id="insights" class="small muted"&gt;Loading…&lt;/div&gt;
+  &lt;div id="weekly_plot" class="plot smallplot"&gt;&lt;/div&gt;
+&lt;/section&gt;
+
+&lt;section class="card"&gt;
+  &lt;h2&gt;Recent activities&lt;/h2&gt;
+  &lt;div id="recent_list" class="small muted"&gt;Loading…&lt;/div&gt;
+&lt;/section&gt;
+
+&lt;script src="app.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+
+================================================================================
+FILE: docs/index.html.BROKEN
+================================================================================
+&lt;!DOCTYPE html&gt;
+
+&lt;html lang="en-GB"&gt;
+&lt;head&gt;
+&lt;meta charset="utf-8"/&gt;
+&lt;meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/&gt;
+&lt;title&gt;RunMetrics&lt;/title&gt;
+&lt;link href="style.css" rel="stylesheet"/&gt;
+&lt;script src="https://cdn.plot.ly/plotly-2.30.0.min.js"&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;header class="top"&gt;
+&lt;div&gt;
+&lt;h1&gt;🏃 RunMetrics&lt;/h1&gt;
+&lt;div class="sub"&gt;Solid history + simple projected futures&lt;/div&gt;
+&lt;div class="small muted"&gt;Backend: &lt;span id="api_url"&gt;&lt;/span&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/header&gt;
+&lt;section class="card"&gt;
+&lt;h2&gt;Fitness / fatigue / form (past + projected)&lt;/h2&gt;
+&lt;p class="explain"&gt;
+&lt;strong&gt;Fitness (CTL)&lt;/strong&gt;: long‑term load (how fit you’re becoming).&lt;br/&gt;
+&lt;strong&gt;Fatigue (ATL)&lt;/strong&gt;: short‑term load (how tired you are now).&lt;br/&gt;
+&lt;strong&gt;Form (TSB)&lt;/strong&gt; = CTL − ATL (freshness).
+      &lt;span class="muted"&gt;Past = solid. Projection = your slider choice (dash‑dot).&lt;/span&gt;
+&lt;/p&gt;
+&lt;div class="small muted" id="rec_workout"&gt;&lt;/div&gt;
+&lt;div class="plot" id="load_plot"&gt;&lt;/div&gt;
+&lt;div class="small muted" id="load_meta"&gt;&lt;/div&gt;
+&lt;/section&gt;
+&lt;section class="card"&gt;
+&lt;h2&gt;What if I train tomorrow?&lt;/h2&gt;
+&lt;p class="explain"&gt;
+      Adjust duration/intensity. The ranked table updates, and the long‑term plot above shows the next‑week projection for your choice.
+    &lt;/p&gt;
+&lt;div class="controls"&gt;
+&lt;label&gt;
+        Duration: &lt;span id="dur_lbl"&gt;&lt;/span&gt; min
+        &lt;input id="dur" max="180" min="5" step="5" type="range" value="45"/&gt;
+&lt;/label&gt;
+&lt;label&gt;
+        Intensity
+        &lt;select id="intensity_mode"&gt;
+&lt;option value="0.50"&gt;Easy jog&lt;/option&gt;
+&lt;option value="0.60"&gt;Easy aerobic&lt;/option&gt;
+&lt;option selected="" value="0.65"&gt;Aerobic (Z2)&lt;/option&gt;
+&lt;option value="0.72"&gt;Steady&lt;/option&gt;
+&lt;option value="0.80"&gt;Tempo&lt;/option&gt;
+&lt;option value="0.88"&gt;Hard&lt;/option&gt;
+&lt;/select&gt;
+&lt;/label&gt;
+&lt;/div&gt;
+&lt;div class="small" id="scenario_table"&gt;&lt;/div&gt;
+&lt;/section&gt;&lt;section class="card subtle" id="recommendation_explain"&gt;&lt;/section&gt;
+&lt;!-- HR panels: compact side-by-side --&gt;
+&lt;section class="grid-two" id="hr_grid"&gt;
+&lt;section class="card compact" id="zones_week_panel"&gt;
+&lt;h3&gt;Time in HR zones (this week)&lt;/h3&gt;
+&lt;div class="plot tinyplot" id="zones_week_plot"&gt;&lt;/div&gt;
+&lt;/section&gt;
+&lt;section class="card compact" id="zones_visual_panel"&gt;
+&lt;h3&gt;HR zones&lt;/h3&gt;
+&lt;div class="plot tinyplot" id="zones_band_plot"&gt;&lt;/div&gt;
+&lt;div class="small muted" id="zones_band_note"&gt;&lt;/div&gt;
+&lt;/section&gt;
+&lt;/section&gt;
+&lt;!-- Full-width skew line below both panels --&gt;
+&lt;section class="card subtle" id="zones_global_skew"&gt;&lt;/section&gt;
+&lt;footer class="small muted"&gt;
+    ⚠️ Outstanding: migrate DB off Render free tier before 30‑day expiry.
+  &lt;/footer&gt;
+
+
+&lt;section class="card" id="training_insights"&gt;
+  &lt;h2&gt;Training insights&lt;/h2&gt;
+  &lt;p class="explain"&gt;Contextual checks on recent training load and session mix (informational only).&lt;/p&gt;
+  &lt;div id="insights_content" class="small muted"&gt;Loading insights…&lt;/div&gt;
+&lt;/section&gt;
+
+
+&lt;section class="card" id="recent_activities"&gt;
+  &lt;h2&gt;Recent activities&lt;/h2&gt;
+  &lt;div id="activities_list" class="small muted"&gt;Loading activities…&lt;/div&gt;
+&lt;/section&gt;
+
+
+&lt;section class="card"&gt;
+  &lt;h2&gt;Recent activities&lt;/h2&gt;
+  &lt;div id="recent_list"&gt;Loading activities…&lt;/div&gt;
+&lt;/section&gt;
+
+&lt;section class="card subtle"&gt;
+  &lt;div id="load_meta"&gt;Loading training summary…&lt;/div&gt;
+&lt;/section&gt;
+
+&lt;script&gt;
+(function(){
+  const BASE = window.location.origin + window.location.pathname.replace(/\/, "");
+  const DATA = BASE + "/data";
+
+  function fetchJSON(p){
+    return fetch(p, {cache:"no-store"}).then(r=&gt;{
+      if(!r.ok) throw new Error(r.status+" "+r.statusText);
+      return r.json();
+    });
+  }
+
+  // ---- CTL / ATL / TSB plot ----
+  fetchJSON(DATA + "/load_365.json").then(j=&gt;{
+    const s = j.series.slice(-120);
+    const x = s.map(p=&gt;p.date);
+    const ctl = s.map(p=&gt;p.ctl);
+    const atl = s.map(p=&gt;p.atl);
+    const tsb = s.map(p=&gt;p.tsb);
+
+    Plotly.newPlot(
+      "load_plot",
+      [
+        {x,y:ctl,name:"CTL",mode:"lines",line:{color:"#6aa9ff",width:3}},
+        {x,y:atl,name:"ATL",mode:"lines",line:{color:"#ff6b6b",width:3}},
+        {x,y:tsb,name:"TSB",mode:"lines",line:{color:"#3ddc97",width:3}},
+      ],
+      {
+        paper_bgcolor:"#0f1117",plot_bgcolor:"#0f1117",
+        font:{color:"#e9eef6"},
+        xaxis:{gridcolor:"#1f2430"},
+        yaxis:{gridcolor:"#1f2430",title:"load"},
+        margin:{t:20,l:55,r:10,b:45},
+        legend:{orientation:"h"}
+      },
+      {displayModeBar:false}
+    );
+
+    const last = s[s.length-1];
+    document.getElementById("load_meta").textContent =
+      "Last update: " + j.generated_at.slice(0,19).replace("T"," ") +
+      " · CTL " + last.ctl.toFixed(1) +
+      " ATL " + last.atl.toFixed(1) +
+      " TSB " + last.tsb.toFixed(1);
+  });
+
+  // ---- Recent activities ----
+  fetchJSON(DATA + "/recent.json").then(j=&gt;{
+    const el = document.getElementById("activities_list");
+    el.innerHTML = "&lt;ul&gt;" + j.items.map(a=&gt;
+      "&lt;li&gt;&lt;strong&gt;" + a.date.slice(0,10) + "&lt;/strong&gt; — " +
+      a.name + " (" + a.distance_km.toFixed(1) + " km, " +
+      a.pace_min_per_km.toFixed(2) + " min/km)&lt;/li&gt;"
+    ).join("") + "&lt;/ul&gt;";
+  });
+})();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+
+
+&lt;!-- RunMetrics inline static renderer (minimal, no deps) --&gt;
+&lt;section class="card"&gt;
+  &lt;h2&gt;Recent activities&lt;/h2&gt;
+  &lt;div id="rm_recent"&gt;Loading activities…&lt;/div&gt;
+&lt;/section&gt;
+
+&lt;script&gt;
+(function(){
+  var base = window.location.origin + window.location.pathname.replace(/\/$/, "");
+  var url = base + "/data/recent.json";
+
+  fetch(url, { cache: "no-store" })
+    .then(function(r){
+      if(!r.ok) throw new Error(r.status + " " + r.statusText);
+      return r.json();
+    })
+    .then(function(j){
+      var el = document.getElementById("rm_recent");
+      el.innerHTML = j.items.map(function(a){
+        var hr = (a.avg_hr === null || a.avg_hr === undefined) ? "–" : a.avg_hr;
+        return (
+          "&lt;div style='margin-bottom:6px'&gt;" +
+          "&lt;strong&gt;" + a.date.slice(0,10) + "&lt;/strong&gt; — " + a.name +
+          " &lt;span style='color:#888'&gt;(" +
+          a.distance_km.toFixed(1) + " km, " +
+          a.pace_min_per_km.toFixed(2) + " min/km, HR " + hr +
+          ")&lt;/span&gt;&lt;/div&gt;"
+        );
+      }).join("");
+    })
+    .catch(function(err){
+      console.error(err);
+      document.getElementById("rm_recent").textContent =
+        "Failed to load recent activities (see console).";
+    });
+})();
+&lt;/script&gt;
+
+
+&lt;!-- RunMetrics: CTL/ATL/TSB plot from static JSON --&gt;
+&lt;section class="card"&gt;
+  &lt;h2&gt;Training load (CTL / ATL / TSB)&lt;/h2&gt;
+  &lt;div id="rm_pmc_meta" class="small muted"&gt;Loading load series…&lt;/div&gt;
+  &lt;div id="rm_pmc_plot" style="width:100%;height:420px;margin-top:10px"&gt;&lt;/div&gt;
+&lt;/section&gt;
+
+&lt;script&gt;
+(function(){
+  function fetchJSON(url){
+    return fetch(url, { cache: "no-store" })
+      .then(function(r){
+        if(!r.ok) throw new Error(r.status + " " + r.statusText);
+        return r.json();
+      });
+  }
+
+  function sliceLast(arr, n){
+    if(!arr) return [];
+    if(arr.length &lt;= n) return arr;
+    return arr.slice(arr.length - n);
+  }
+
+  function plot(series, generated_at){
+    var meta = document.getElementById("rm_pmc_meta");
+    var plotDiv = document.getElementById("rm_pmc_plot");
+    if(!plotDiv) return;
+
+    // last 120 days
+    var s = sliceLast(series, 120);
+
+    var x = s.map(function(p){ return p.date; });
+    var ctl = s.map(function(p){ return p.ctl; });
+    var atl = s.map(function(p){ return p.atl; });
+    var tsb = s.map(function(p){ return p.tsb; });
+
+    var DARK = {
+      paper_bgcolor:"#0f1117",
+      plot_bgcolor:"#0f1117",
+      font:{color:"#e9eef6"},
+      xaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
+      yaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
+      legend:{orientation:"h"},
+      margin:{t:20,r:10,l:55,b:45}
+    };
+
+    var traces = [
+      {x:x, y:ctl, type:"scatter", mode:"lines", name:"CTL (fitness)", line:{color:"#6aa9ff", width:3}},
+      {x:x, y:atl, type:"scatter", mode:"lines", name:"ATL (fatigue)", line:{color:"#ff6b6b", width:3}},
+      {x:x, y:tsb, type:"scatter", mode:"lines", name:"TSB (form)", line:{color:"#3ddc97", width:3}}
+    ];
+
+    var layout = {
+      title:"",
+      ...DARK,
+      yaxis:{...DARK.yaxis, title:"load units"},
+      xaxis:{...DARK.xaxis, title:"date"}
+    };
+
+    // Plotly.newPlot is how your original dashboard rendered plots 【1-7910db】
+    Plotly.newPlot(plotDiv, traces, layout, {displayModeBar:false});
+
+    if(meta){
+      var last = s[s.length - 1];
+      meta.textContent =
+        "Last update: " + (generated_at || "").slice(0,19).replace("T"," ") + " UTC" +
+        " · CTL " + (last.ctl || 0).toFixed(1) +
+        " ATL " + (last.atl || 0).toFixed(1) +
+        " TSB " + (last.tsb || 0).toFixed(1);
+    }
+  }
+
+  function boot(){
+    var base = window.location.origin + window.location.pathname.replace(/\/$/, "");
+    var url = base + "/data/load_365.json";
+
+    if(typeof Plotly === "undefined"){
+      console.error("Plotly not loaded");
+      var meta = document.getElementById("rm_pmc_meta");
+      if(meta) meta.textContent = "Plotly failed to load.";
+      return;
+    }
+
+    fetchJSON(url)
+      .then(function(j){
+        if(!j || !j.series || !j.series.length){
+          var meta = document.getElementById("rm_pmc_meta");
+          if(meta) meta.textContent = "No load series found.";
+          return;
+        }
+        plot(j.series, j.generated_at);
+      })
+      .catch(function(e){
+        console.error(e);
+        var meta = document.getElementById("rm_pmc_meta");
+        if(meta) meta.textContent = "Failed to load load_365.json (see console).";
+      });
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+&lt;/script&gt;
+
+
+================================================================================
+FILE: docs/script.js
+================================================================================
+const API = "https://runmetrics.onrender.com";
+document.getElementById("api_url").textContent = API;
+
+function fmt(x, dp=1){
+  if(x === null || x === undefined || Number.isNaN(Number(x))) return "";
+  return Number(x).toFixed(dp);
+}
+async function fetchJSON(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+  return r.json();
+}
+
+const DARK = {
+  paper_bgcolor:"#0f1117",
+  plot_bgcolor:"#0f1117",
+  font:{color:"#e9eef6"},
+  xaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
+  yaxis:{gridcolor:"#1f2430",zerolinecolor:"#1f2430"},
+  legend:{orientation:"h", font:{size:10}},
+  margin:{t:20,r:10,l:60,b:45},
+};
+
+const C = { ctl:"#6aa9ff", atl:"#ff6b6b", tsb:"#3ddc97" };
+
+function nextDatesFrom(lastIsoDate, n){
+  const base = new Date(lastIsoDate + "T00:00:00Z");
+  const out = [];
+  for(let i=1;i&lt;=n;i++){
+    const d = new Date(base.getTime() + i*24*3600*1000);
+    out.push(d.toISOString().slice(0,10));
+  }
+  return out;
+}
+
+function intensityLabel(intensity){
+  const pct = Math.round(intensity*100);
+  if (pct &lt;= 52) return "Easy jog";
+  if (pct &lt;= 62) return "Easy aerobic";
+  if (pct &lt;= 68) return "Aerobic (Z2)";
+  if (pct &lt;= 75) return "Steady";
+  if (pct &lt;= 83) return "Tempo";
+  return "Hard";
+}
+
+function recBadge(rec){
+  const c = rec==="good" ? "#3ddc97" : (rec==="caution" ? "#ffcc66" : "#ff6b6b");
+  const t = rec==="good" ? "✅ sensible" : (rec==="caution" ? "⚠️ caution" : "⛔ risky");
+  return `&lt;span style="display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid ${c};color:${c}"&gt;${t}&lt;/span&gt;`;
+}
+
+function arrowFor(v){
+  if(v &gt; 1.0) return "↑";
+  if(v &lt; -1.0) return "↓";
+  return "↔";
+}
+function fatigueText(v){
+  if(v &gt; 1.0) return "more tired";
+  if(v &lt; -1.0) return "less tired";
+  return "about the same";
+}
+function freshnessText(v){
+  if(v &gt; 1.0) return "fresher";
+  if(v &lt; -1.0) return "more tired";
+  return "about the same";
+}
+
+function daysSinceLastTraining(loadSeries){
+  // loadSeries items have {date, daily_load, ctl, atl, tsb}
+  // Find last day with daily_load &gt; 0
+  for (let i = loadSeries.length - 1; i &gt;= 0; i--) {
+    if ((loadSeries[i].daily_load || 0) &gt; 0) {
+      const d = new Date(loadSeries[i].date + "T00:00:00Z");
+      const now = new Date();
+      const diff = Math.floor((now - d) / (24*3600*1000));
+      return diff;
+    }
+  }
+  return 999;
+}
+
+function summariseSkew(weekZones){
+  const order = ["Z1","Z2","Z3","Z4","Z5"];
+  const mins = order.map(z =&gt; (weekZones[z]?.minutes ?? 0));
+  const total = mins.reduce((a,b)=&gt;a+b,0) || 1;
+  const frac = mins.map(m =&gt; m/total);
+  const [z1,z2,z3,z4,z5] = frac;
+  const hard = z4 + z5;
+
+  if (z2 &gt;= 0.55 &amp;&amp; z3 &lt; 0.25 &amp;&amp; hard &lt; 0.10) {
+    return "Skew: mostly aerobic (Z2). Likely supports aerobic durability/efficiency; may under‑stimulate high‑intensity (Z4–Z5) adaptations if sustained for many weeks.";
+  } else if (z3 &gt;= 0.25) {
+    return "Skew: tempo‑heavy (Z3). Can build muscular endurance and threshold‑adjacent strength, but often carries fatigue—balance with more Z1–Z2 and keep Z4 sessions deliberate.";
+  } else if (hard &gt;= 0.12) {
+    return "Skew: higher intensity (Z4–Z5). Supports VO₂/speed adaptations, but benefits most when backed by Z2 volume and adequate recovery.";
+  } else {
+    return "Skew: fairly balanced. Good general development; shift towards more Z2 for base phases or more Z4 for sharpening phases.";
+  }
+}
+
+async function renderHRPanels(){
+  const order = ["Z1","Z2","Z3","Z4","Z5"];
+  const colors = { Z1:"#4da3ff", Z2:"#3ddc97", Z3:"#ffcc66", Z4:"#ff6b6b", Z5:"#ff4dff" };
+
+  const zones = await fetchJSON(`${API}/api/zones`);
+  const zonesOld = await fetchJSON(`${API}/api/zones_history?days_ago=90`);
+  const week = await fetchJSON(`${API}/api/zone_effort?weeks=1`);
+
+  // Weekly stacked bar
+  if (week.status === "ok") {
+    const mins = order.map(z =&gt; week.zones[z]?.minutes || 0);
+    const traces = order.map((z,i)=&gt;({
+      type:"bar", orientation:"h",
+      y:["This week"], x:[mins[i]],
+      name:`${z} (${mins[i]} min)`,
+      marker:{color:colors[z]},
+    }));
+    Plotly.newPlot("zones_week_plot", traces, {
+      ...DARK,
+      barmode:"stack",
+      xaxis:{...DARK.xaxis, title:"minutes"},
+      yaxis:{visible:false},
+      margin:{t:16,r:10,l:20,b:40}
+    }, {responsive:true});
+
+    document.getElementById("zones_global_skew").textContent = summariseSkew(week.zones);
+  }
+
+  // Zone band
+  if (zones.status === "ok") {
+    const hrmax = zones.hrmax;
+    const lt1 = zones.lt1_hr;
+    const lt2 = zones.lt2_hr;
+
+    const shapes = [];
+    const annotations = [];
+
+    order.forEach(z =&gt; {
+      const [lo,hi] = zones.zones[z];
+      shapes.push({
+        type:"rect", xref:"x", yref:"paper",
+        x0:lo, x1:hi, y0:0, y1:1,
+        fillcolor: colors[z] + "55",
+        line:{width:0}
+      });
+
+      // Put zone label above, small font to avoid overlap
+      annotations.push({
+        x:(lo+hi)/2, y:1.08, xref:"x", yref:"paper",
+        text:`${z} ${Math.round(lo)}–${Math.round(hi)}`,
+        showarrow:false,
+        font:{color:"rgba(233,238,246,0.85)", size:10},
+        align:"center"
+      });
+    });
+
+    const addVLine = (x, label, dash, opacity, width=2) =&gt; {
+      shapes.push({
+        type:"line", xref:"x", yref:"paper",
+        x0:x, x1:x, y0:0, y1:1,
+        line:{color:`rgba(233,238,246,${opacity})`, dash, width}
+      });
+      annotations.push({
+        x:x, y:-0.12, xref:"x", yref:"paper",
+        text:label, showarrow:false,
+        font:{color:`rgba(233,238,246,${opacity})`, size:10},
+        align:"center"
+      });
+    };
+
+    addVLine(lt1, "LT1", "solid", 1.0, 2);
+    addVLine(lt2, "LT2", "solid", 1.0, 2);
+    addVLine(hrmax, "HRmax", "dot", 0.9, 2);
+
+    if (zonesOld &amp;&amp; zonesOld.status === "ok") {
+      addVLine(zonesOld.lt1_hr, "LT1 (90d ago)", "dash", 0.55, 1);
+      addVLine(zonesOld.lt2_hr, "LT2 (90d ago)", "dash", 0.55, 1);
+      addVLine(zonesOld.hrmax, "HRmax (90d ago)", "dot", 0.40, 1);
+    }
+
+    Plotly.newPlot("zones_band_plot", [{
+      x:[Math.max(80,0.55*hrmax), hrmax+5],
+      y:[0,0],
+      mode:"lines",
+      line:{color:"rgba(0,0,0,0)"},
+      showlegend:false
+    }], {
+      ...DARK,
+      shapes,
+      annotations,
+      xaxis:{...DARK.xaxis, title:"Heart rate (bpm)", range:[Math.max(80,0.55*hrmax), hrmax+5]},
+      yaxis:{visible:false},
+      margin:{t:32,r:10,l:20,b:58},
+      showlegend:false
+    }, {responsive:true});
+
+    document.getElementById("zones_band_note").textContent =
+      `Current: LT1≈${lt1} bpm · LT2≈${lt2} bpm · HRmax≈${hrmax} bpm (estimated from your data).`;
+  }
+}
+
+async function renderMain(){
+  const dur = Number(document.getElementById("dur").value);
+  const intensity = Number(document.getElementById("intensity_mode").value);
+  document.getElementById("dur_lbl").textContent = dur;
+
+  const hist = await fetchJSON(`${API}/api/load?days=90`);
+  const series = hist.series || [];
+
+  const xPast = series.map(p =&gt; p.date);
+  const ctlPast = series.map(p =&gt; p.ctl);
+  const atlPast = series.map(p =&gt; p.atl);
+  const tsbPast = series.map(p =&gt; p.tsb);
+
+  const lastDate = xPast[xPast.length - 1];
+  const lastCtl = ctlPast[ctlPast.length - 1];
+  const lastAtl = atlPast[atlPast.length - 1];
+  const lastTsb = tsbPast[tsbPast.length - 1];
+
+  const scen = await fetchJSON(`${API}/api/scenarios_dynamic?days=7&amp;dur_min=${dur}&amp;intensity=${intensity}`);
+  if (scen.status !== "ok") throw new Error("scenarios_dynamic failed");
+
+  // Identify scenarios
+  const rest = (scen.scenarios || []).find(s =&gt; s.name === "Rest");
+  const custom = (scen.scenarios || []).find(s =&gt; s.name === "Custom") || scen.scenarios[0];
+
+  // Recommended = best non-rest if available, else best overall
+  let recommended = scen.scenarios[0];
+  const bestNonRest = (scen.scenarios || []).find(s =&gt; s.name !== "Rest");
+  if (bestNonRest) recommended = bestNonRest;
+
+  // Recommended workout text
+  if (recommended.name === "Rest" || recommended.dur_min === 0) {
+    document.getElementById("rec_workout").textContent =
+      "Recommended tomorrow: Rest day (based on freshness projection).";
+  } else {
+    document.getElementById("rec_workout").textContent =
+      `Recommended tomorrow: ${Math.round(recommended.dur_min)} min at ${intensityLabel(recommended.intensity)} (~${Math.round(recommended.intensity*100)}% HRmax).`;
+  }
+
+  // Table rows: Rest, Recommended(desc), Custom
+  const daysOff = daysSinceLastTraining(series);
+  const fatigueHigh = (scen.baseline &amp;&amp; scen.baseline.tsb &lt; -15) || (scen.baseline &amp;&amp; scen.baseline.atl &gt; 1.05*scen.baseline.ctl);
+
+  function assessmentFor(option){
+    let rec = option.recommendation || "good";
+    if (option.name === "Rest" &amp;&amp; daysOff &gt; 2 &amp;&amp; !fatigueHigh) {
+      rec = "caution";
+    }
+    return rec;
+  }
+
+  const rows = [];
+
+  if (rest) {
+    rows.push({
+      label:"Rest",
+      delta_ctl:rest.delta_ctl, delta_atl:rest.delta_atl, delta_tsb:rest.delta_tsb,
+      rec:assessmentFor(rest)
+    });
+  }
+
+  const recDesc = (recommended.name === "Rest" || recommended.dur_min === 0)
+    ? "Recommended (Rest)"
+    : `Recommended (${Math.round(recommended.dur_min)} min ${intensityLabel(recommended.intensity)})`;
+
+  rows.push({
+    label:recDesc,
+    delta_ctl:recommended.delta_ctl, delta_atl:recommended.delta_atl, delta_tsb:recommended.delta_tsb,
+    rec:assessmentFor(recommended)
+  });
+
+  rows.push({
+    label:"Custom",
+    delta_ctl:custom.delta_ctl, delta_atl:custom.delta_atl, delta_tsb:custom.delta_tsb,
+    rec:assessmentFor(custom)
+  });
+
+  const tableRows = rows.map(r =&gt; `
+    &lt;tr&gt;
+      &lt;td&gt;&lt;strong&gt;${r.label}&lt;/strong&gt;&lt;/td&gt;
+      &lt;td class="num"&gt;${arrowFor(r.delta_ctl)} &lt;span class="muted"&gt;${fmt(r.delta_ctl,1)}&lt;/span&gt;&lt;/td&gt;
+      &lt;td&gt;${fatigueText(r.delta_atl)} &lt;span class="muted"&gt;(${fmt(r.delta_atl,1)})&lt;/span&gt;&lt;/td&gt;
+      &lt;td&gt;${freshnessText(r.delta_tsb)} &lt;span class="muted"&gt;(${fmt(r.delta_tsb,1)})&lt;/span&gt;&lt;/td&gt;
+      &lt;td&gt;${recBadge(r.rec)}&lt;/td&gt;
+    &lt;/tr&gt;
+  `).join("");
+
+  document.getElementById("scenario_table").innerHTML = `
+    &lt;div class="tablewrap"&gt;
+      &lt;table&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th&gt;Option&lt;/th&gt;
+            &lt;th class="num"&gt;Fitness change&lt;/th&gt;
+            &lt;th&gt;Fatigue change&lt;/th&gt;
+            &lt;th&gt;Freshness change&lt;/th&gt;
+            &lt;th&gt;Assessment&lt;/th&gt;
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;${tableRows}&lt;/tbody&gt;
+      &lt;/table&gt;
+    &lt;/div&gt;
+    &lt;p class="small muted" style="margin-top:8px"&gt;
+      Fitness ≈ CTL (long‑term) · Fatigue ≈ ATL (short‑term) · Freshness ≈ TSB (CTL−ATL)
+    &lt;/p&gt;
+  `;
+
+  // MAIN PLOT: past solid; ONLY custom projection
+  const xFut = nextDatesFrom(lastDate, 7);
+  const xProj = [lastDate, ...xFut];
+  const withStart = (arr, startVal) =&gt; [startVal, ...arr];
+
+  const traces = [
+    {x:xPast,y:ctlPast,type:"scatter",mode:"lines",name:"Fitness (CTL) past",line:{color:C.ctl,width:3}},
+    {x:xPast,y:atlPast,type:"scatter",mode:"lines",name:"Fatigue (ATL) past",line:{color:C.atl,width:3}},
+    {x:xPast,y:tsbPast,type:"scatter",mode:"lines",name:"Form (TSB) past",line:{color:C.tsb,width:3}},
+  ];
+
+  traces.push({
+    x:xProj, y:withStart(custom.series.ctl, lastCtl),
+    type:"scatter", mode:"lines",
+    name:"CTL projection (your choice)",
+    line:{color:C.ctl, dash:"dashdot", width:2}, opacity:0.85
+  });
+  traces.push({
+    x:xProj, y:withStart(custom.series.atl, lastAtl),
+    type:"scatter", mode:"lines",
+    name:"ATL projection (your choice)",
+    line:{color:C.atl, dash:"dashdot", width:2}, opacity:0.85
+  });
+  traces.push({
+    x:xProj, y:withStart(custom.series.tsb, lastTsb),
+    type:"scatter", mode:"lines",
+    name:"TSB projection (your choice)",
+    line:{color:C.tsb, dash:"dashdot", width:2}, opacity:0.85
+  });
+
+  Plotly.newPlot("load_plot", traces, {
+    ...DARK,
+    yaxis:{...DARK.yaxis,title:"load units"},
+    xaxis:{...DARK.xaxis,title:"date"},
+  }, {responsive:true});
+
+  document.getElementById("load_meta").textContent =
+    `Showing last 90 days. Projection shown for your slider choice only.`;
+
+  // HR panels (non-blocking)
+  renderHRPanels().catch(err =&gt; console.warn("HR panels skipped:", err));
+}
+
+function attachControls(){
+  const dur = document.getElementById("dur");
+  const mode = document.getElementById("intensity_mode");
+  const rerender = () =&gt; renderMain().catch(console.error);
+  dur.addEventListener("input", rerender);
+  mode.addEventListener("change", rerender);
+}
+
+document.addEventListener("DOMContentLoaded", () =&gt; {
+  attachControls();
+  renderMain().catch(e =&gt; {
+    console.error(e);
+    alert("Dashboard couldn't load API data. If Render was sleeping, refresh.");
+  });
+});
+
+
+/* RM_LOCK_RECOMMENDED_V1
+   Purpose:
+   - Keep the Recommended row stable (does not change when sliders move).
+   - After the table first renders, set Custom sliders to a slightly more ambitious default.
+   - Does not modify your existing rendering logic; it only post-processes the DOM.
+*/
+(function(){
+  let cachedRecommendedHTML = null;
+  let ignoreObserver = false;
+
+  function findRecommendedRow(){
+    const host = document.getElementById("scenario_table");
+    if(!host) return null;
+    const rows = host.querySelectorAll("tr");
+    let recRow = null;
+    rows.forEach(r =&gt; {
+      const txt = (r.textContent || "").toLowerCase();
+      if(txt.includes("recommended")) recRow = r;
+    });
+    return recRow;
+  }
+
+  function cacheOrRestoreRecommended(){
+    const recRow = findRecommendedRow();
+    if(!recRow) return false;
+
+    // cache first time
+    if(cachedRecommendedHTML === null){
+      cachedRecommendedHTML = recRow.innerHTML;
+      return true;
+    }
+
+    // restore if it changed
+    if(recRow.innerHTML !== cachedRecommendedHTML){
+      ignoreObserver = true;
+      recRow.innerHTML = cachedRecommendedHTML;
+      ignoreObserver = false;
+    }
+    return true;
+  }
+
+  function setAmbitiousCustomDefaults(){
+    const durEl = document.getElementById("dur");
+    const intEl = document.getElementById("intensity_mode");
+    if(!durEl || !intEl) return;
+
+    // Use current slider values as baseline (these typically match the initial recommended state)
+    let dur = parseInt(durEl.value || "45", 10);
+    let inten = parseFloat(intEl.value || "0.65");
+
+    // Slightly more ambitious but sensible:
+    // - If aerobic-ish, add +15 min duration (cap 90).
+    // - Else bump intensity one notch (cap ~0.80), keep duration.
+    if(inten &lt;= 0.65){
+      dur = Math.min(dur + 15, 90);
+    } else {
+      const opts = Array.from(intEl.options).map(o =&gt; parseFloat(o.value)).sort((a,b)=&gt;a-b);
+      const next = opts.find(v =&gt; v &gt; inten &amp;&amp; v &lt;= 0.80);
+      inten = (next !== undefined) ? next : Math.min(inten + 0.03, 0.80);
+    }
+
+    // snap duration to 5 min steps
+    durEl.value = String(Math.round(dur/5)*5);
+    // snap intensity to the select’s value format
+    intEl.value = inten.toFixed(2);
+
+    const durLbl = document.getElementById("dur_lbl");
+    if(durLbl) durLbl.textContent = durEl.value;
+
+    // Trigger your existing render logic
+    durEl.dispatchEvent(new Event("input", { bubbles:true }));
+    intEl.dispatchEvent(new Event("change", { bubbles:true }));
+  }
+
+  function boot(){
+    const host = document.getElementById("scenario_table");
+    if(!host) return;
+
+    // Wait until table is rendered once, then cache recommended and set defaults.
+    let tries = 0;
+    const timer = setInterval(() =&gt; {
+      tries += 1;
+      const ok = cacheOrRestoreRecommended();
+      if(ok){
+        clearInterval(timer);
+
+        // Observe future changes and keep recommended stable
+        const obs = new MutationObserver(() =&gt; {
+          if(ignoreObserver) return;
+          cacheOrRestoreRecommended();
+        });
+        obs.observe(host, { childList:true, subtree:true, characterData:true });
+
+        // After caching recommended, make custom a bit more ambitious
+        setTimeout(setAmbitiousCustomDefaults, 80);
+      }
+      if(tries &gt; 60) clearInterval(timer); // give up after ~12s
+    }, 200);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+
+
+/* RM_RECOMMENDATION_EXPLAIN_PANEL_V1
+   Reads the rendered "Recommended" table row and explains it.
+   No API calls, no dependency on sliders.
+*/
+(function(){
+  function inferExplanation(text){
+    const t = text.toLowerCase();
+
+    if(t.includes("rest")){
+      return {
+        why: "Fatigue is high relative to fitness, so recovery is prioritised.",
+        trade: "Fitness progression pauses temporarily to restore freshness."
+      };
+    }
+
+    if(t.includes("z2") || t.includes("aerobic")){
+      return {
+        why: "Aerobic work supports cardiovascular efficiency and durability with low fatigue cost.",
+        trade: "Minimal high-intensity (Z4–Z5) stimulus today."
+      };
+    }
+
+    if(t.includes("steady")){
+      return {
+        why: "Steady intensity builds aerobic strength while keeping fatigue manageable.",
+        trade: "Less top-end speed or VO₂ stimulus compared to harder sessions."
+      };
+    }
+
+    if(t.includes("tempo") || t.includes("hard")){
+      return {
+        why: "Moderate–high intensity supports threshold and race-relevant fitness.",
+        trade: "Higher fatigue load — balance with easier days."
+      };
+    }
+
+    return {
+      why: "This option balances fitness progression and fatigue given your recent training.",
+      trade: "Some adaptations are deprioritised today."
+    };
+  }
+
+  function updatePanel(){
+    const host = document.getElementById("scenario_table");
+    const panel = document.getElementById("recommendation_explain");
+    if(!host || !panel) return;
+
+    const rows = host.querySelectorAll("tr");
+    let recRow = null;
+
+    rows.forEach(r =&gt; {
+      if((r.textContent || "").toLowerCase().includes("recommended")){
+        recRow = r;
+      }
+    });
+
+    if(!recRow) return;
+
+    const text = recRow.textContent || "";
+    const info = inferExplanation(text);
+
+    panel.innerHTML = `
+      &lt;strong&gt;Why this is recommended&lt;/strong&gt;&lt;br&gt;
+      ${info.why}&lt;br&gt;
+      &lt;em&gt;Trade-off:&lt;/em&gt; ${info.trade}
+    `;
+  }
+
+  function boot(){
+    // Table renders asynchronously; poll briefly then observe
+    let tries = 0;
+    const timer = setInterval(() =&gt; {
+      updatePanel();
+      tries += 1;
+      if(tries &gt; 25){
+        clearInterval(timer);
+        const host = document.getElementById("scenario_table");
+        if(host){
+          const obs = new MutationObserver(updatePanel);
+          obs.observe(host, { childList:true, subtree:true, characterData:true });
+        }
+      }
+    }, 200);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+
+
+/* RM_RUNNING_LOAD_CALIBRATION_V1
+   Calibrate a running-specific load scale from recent history.
+   Applied ONLY to projections (not past CTL).
+*/
+async function computeRunScale(){
+  try{
+    const hist = await fetchJSON(`${API}/api/load?days=56`);
+    const s = hist.series || [];
+    if(s.length &lt; 14) return 0.5; // fallback
+
+    // realised CTL ramp
+    const ctl_start = s[0].ctl;
+    const ctl_end = s[s.length-1].ctl;
+    const weeks = s.length / 7.0;
+    const realised_per_week = (ctl_end - ctl_start) / weeks;
+
+    // plausible running ramp (centre of typical sustainable range)
+    const target_per_week = Math.max(2.5, Math.min(7.0, realised_per_week));
+
+    // model ramp implied by raw load (protect against divide-by-zero)
+    const model_per_week = realised_per_week !== 0 ? realised_per_week : 5.0;
+
+    const k = target_per_week / model_per_week;
+    return Math.max(0.25, Math.min(1.0, k));
+  }catch(e){
+    console.warn("Run scale calibration failed; using fallback", e);
+    return 0.5;
+  }
+}
+
+================================================================================
+FILE: docs/script_v1.js
+================================================================================
+
+================================================================================
+FILE: docs/script_v1.js.BAK
+================================================================================
+/* RunMetrics – static GitHub Pages renderer (no Render API)
+ *
+ * Reads:
+ *   docs/data/load_365.json
+ *   docs/data/recent.json
+ *
+ * Renders into:
+ *   #load_plot, #load_meta, #recent_list
+ */
+
+(function () {
+  "use strict";
+
+  var BASE = window.location.origin + window.location.pathname.replace(/\/$/, "");
+  var DATA = BASE + "/data";
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function fmt(x, dp) {
+    if (x === null || x === undefined || Number.isNaN(Number(x))) return "–";
+    return Number(x).toFixed(dp === undefined ? 1 : dp);
+  }
+
+  function sliceLast(arr, n) {
+    if (!arr) return [];
+    if (arr.length &lt;= n) return arr;
+    return arr.slice(arr.length - n);
+  }
+
+  function fetchJSON(url) {
+    return fetch(url, { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error(r.status + " " + r.statusText + " :: " + url);
+      return r.json();
+    });
+  }
+
+  function plotLoad(series, generatedAt) {
+    var plotDiv = byId("load_plot");
+    var metaDiv = byId("load_meta");
+    if (!plotDiv) return;
+
+    if (typeof Plotly === "undefined") {
+      if (metaDiv) metaDiv.textContent = "Plotly failed to load.";
+      return;
+    }
+
+    var s = sliceLast(series, 120);
+    var x = s.map(function (p) { return p.date; });
+    var ctl = s.map(function (p) { return p.ctl; });
+    var atl = s.map(function (p) { return p.atl; });
+    var tsb = s.map(function (p) { return p.tsb; });
+
+    var layout = {
+      paper_bgcolor: "#0f1117",
+      plot_bgcolor: "#0f1117",
+      font: { color: "#e9eef6" },
+      xaxis: { gridcolor: "#1f2430", zerolinecolor: "#1f2430", title: "date" },
+      yaxis: { gridcolor: "#1f2430", zerolinecolor: "#1f2430", title: "load" },
+      margin: { t: 20, l: 55, r: 10, b: 45 },
+      legend: { orientation: "h" }
+    };
+
+    var traces = [
+      { x: x, y: ctl, type: "scatter", mode: "lines", name: "CTL (fitness)", line: { color: "#6aa9ff", width: 3 } },
+      { x: x, y: atl, type: "scatter", mode: "lines", name: "ATL (fatigue)", line: { color: "#ff6b6b", width: 3 } },
+      { x: x, y: tsb, type: "scatter", mode: "lines", name: "TSB (form)", line: { color: "#3ddc97", width: 3 } }
+    ];
+
+    Plotly.newPlot(plotDiv, traces, layout, { displayModeBar: false, responsive: true });
+
+    if (metaDiv &amp;&amp; s.length) {
+      var last = s[s.length - 1];
+      var stamp = (generatedAt || "").slice(0, 19).replace("T", " ");
+      metaDiv.textContent =
+        "Last update: " + stamp + " UTC · CTL " + fmt(last.ctl, 1) +
+        " · ATL " + fmt(last.atl, 1) + " · TSB " + fmt(last.tsb, 1);
+    }
+  }
+
+  function renderRecent(items) {
+    var host = byId("recent_list");
+    if (!host) return;
+
+    if (!items || !items.length) {
+      host.textContent = "No recent activities found.";
+      return;
+    }
+
+    // Keep it simple + robust (no template strings)
+    var html = "";
+    for (var i = 0; i &lt; items.length; i++) {
+      var a = items[i] || {};
+      var d = (a.date || "").slice(0, 10);
+      var name = a.name || a.sport_type || "Activity";
+      var dist = (a.distance_km !== null &amp;&amp; a.distance_km !== undefined) ? fmt(a.distance_km, 1) + " km" : "–";
+      var pace = (a.pace_min_per_km !== null &amp;&amp; a.pace_min_per_km !== undefined) ? fmt(a.pace_min_per_km, 2) + " min/km" : "–";
+      var hr = (a.avg_hr !== null &amp;&amp; a.avg_hr !== undefined) ? String(Math.round(a.avg_hr)) + " bpm" : "–";
+
+      html += "&lt;div style=\"margin-bottom:6px\"&gt;";
+      html += "&lt;strong&gt;" + d + "&lt;/strong&gt; — " + name;
+      html += " &lt;span class=\"muted\"&gt;(" + dist + ", " + pace + ", HR " + hr + ")&lt;/span&gt;";
+      html += "&lt;/div&gt;";
+    }
+    host.innerHTML = html;
+  }
+/* RM_STATIC_INSIGHTS_V2 */
+    /* RM_STATIC_INSIGHTS_FIXED */
+  function renderInsights(series){
+    var el = document.getElementById("insights_panel");
+    if(!el || !series || series.length &lt; 30) return;
+
+    var last = series[series.length - 1];
+
+    function avg(arr){
+      var s = 0;
+      for(var i=0;i&lt;arr.length;i++) s += arr[i];
+      return arr.length ? (s/arr.length) : 0;
+    }
+
+    var last7  = series.slice(-7);
+    var last28 = series.slice(-28);
+
+    var load7  = avg(last7.map(function(d){ return d.daily_load || 0; }));
+    var load28 = avg(last28.map(function(d){ return d.daily_load || 0; }));
+
+    var trend = "stable";
+    if(load7 &gt; load28 * 1.10) trend = "rising";
+    else if(load7 &lt; load28 * 0.90) trend = "falling";
+
+    var freshness = "balanced";
+    if(last.tsb &gt; 5) freshness = "fresh";
+    else if(last.tsb &lt; -10) freshness = "fatigued";
+
+    var trainingDays7 = last7.filter(function(d){ return (d.daily_load || 0) &gt; 0; }).length;
+
+    el.innerHTML =
+      "&lt;strong&gt;Current state&lt;/strong&gt;&lt;br&gt;" +
+      "Load trend: " + trend + " (7d vs 28d)&lt;br&gt;" +
+      "Freshness: " + freshness + " (TSB " + fmt(last.tsb,1) + ")&lt;br&gt;" +
+      "Training days (last 7): " + trainingDays7 + " / 7&lt;br&gt;" +
+      "&lt;span class=\"muted\"&gt;Use directionally (decision support), not as a precise forecast.&lt;/span&gt;";
+  }
+    var last7  = series.slice(-7);
+    var last28 = series.slice(-28);
+
+    var load7  = avg(last7.map(function(d){ return d.daily_load || 0; }));
+    var load28 = avg(last28.map(function(d){ return d.daily_load || 0; }));
+
+    var trend = "stable";
+    if(load7 &gt; load28 * 1.10) trend = "rising";
+    else if(load7 &lt; load28 * 0.90) trend = "falling";
+
+    var freshness = "balanced";
+    if(last.tsb &gt; 5) freshness = "fresh";
+    else if(last.tsb &lt; -10) freshness = "fatigued";
+
+    var trainingDays7 = last7.filter(function(d){ return (d.daily_load || 0) &gt; 0; }).length;
+
+    el.innerHTML =
+      "&lt;strong&gt;Current state&lt;/strong&gt;&lt;br&gt;" +
+      "Load trend: " + trend + " (7d vs 28d)&lt;br&gt;" +
+      "Freshness: " + freshness + " (TSB " + fmt(last.tsb,1) + ")&lt;br&gt;" +
+      "Training days (last 7): " + trainingDays7 + " / 7&lt;br&gt;" +
+      "&lt;span class=\"muted\"&gt;Use directionally (decision support), not as a precise forecast.&lt;/span&gt;";
+  }
+
+    var last7  = series.slice(-7);
+    var last28 = series.slice(-28);
+
+    var load7  = avg(last7.map(function(d){ return d.daily_load || 0; }));
+    var load28 = avg(last28.map(function(d){ return d.daily_load || 0; }));
+
+    var trend = "stable";
+    if(load7 &gt; load28 * 1.10) trend = "rising";
+    else if(load7 &lt; load28 * 0.90) trend = "falling";
+
+    var freshness = "balanced";
+    if(last.tsb &gt; 5) freshness = "fresh";
+    else if(last.tsb &lt; -10) freshness = "fatigued";
+
+    var trainingDays7 = last7.filter(function(d){ return (d.daily_load || 0) &gt; 0; }).length;
+
+    el.innerHTML =
+      "&lt;strong&gt;Current state&lt;/strong&gt;&lt;br&gt;" +
+      "Load trend: " + trend + " (7d vs 28d)&lt;br&gt;" +
+      "Freshness: " + freshness + " (TSB " + (Math.round(last.tsb*10)/10) + ")&lt;br&gt;" +
+      "Training days (last 7): " + trainingDays7 + " / 7&lt;br&gt;" +
+  }
+
+
+
+  function boot() {
+    // Load plot
+    fetchJSON(DATA + "/load_365.json")
+      .then(function (j) {
+        if (j &amp;&amp; j.series &amp;&amp; j.series.length) {
+          plotLoad(j.series, j.generated_at);
+          renderInsights(j.series);
+        } else {
+          var metaDiv = byId("load_meta");
+          if (metaDiv) metaDiv.textContent = "No load series found in load_365.json.";
+        }
+      })
+      .catch(function (e) {
+        console.error(e);
+        var metaDiv = byId("load_meta");
+        if (metaDiv) metaDiv.textContent = "Failed to load load_365.json (see console).";
+      });
+
+    // Load recent list (support both {items:[]} and {activities:[]} just in case)
+    fetchJSON(DATA + "/recent.json")
+      .then(function (j) {
+        var items = (j &amp;&amp; j.items) ? j.items : ((j &amp;&amp; j.activities) ? j.activities : []);
+        renderRecent(items);
+      })
+      .catch(function (e) {
+        console.error(e);
+        var host = byId("recent_list");
+        if (host) host.textContent = "Failed to load recent.json (see console).";
+      });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+
+
+================================================================================
+FILE: docs/style.css
+================================================================================
+:root{
+  --bg:#07080b;--panel:#0f1117;--panel2:#11131a;--line:#1f2430;
+  --fg:#e9eef6;--muted:#a7b0c0;
+}
+*{box-sizing:border-box} html,body{height:100%}
+body{margin:0;padding:18px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+background:linear-gradient(180deg,#05060a,var(--bg));color:var(--fg)}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin:8px 0 14px}
+h1{margin:0;font-size:2.1rem;letter-spacing:-0.02em}
+.sub{margin-top:4px;color:var(--muted)}
+.small{font-size:0.92rem}
+.muted{color:var(--muted)}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+border-radius:14px;padding:12px;margin:14px 0;box-shadow:0 10px 30px rgba(0,0,0,0.25)}
+h2{margin:0 0 8px;font-size:1.2rem}
+.explain{color:var(--muted);font-size:0.95rem;margin:0 0 8px;line-height:1.35}
+.plot{width:100%;height:420px}
+.plot.smallplot{height:260px}
+@media (min-width:900px){body{padding:24px 32px;max-width:1200px;margin:auto}.plot{height:460px}.plot.smallplot{height:280px}}
+
+================================================================================
+FILE: tools/requirements-local.txt
+================================================================================
+requests==2.32.3
+python-dotenv==1.0.1
+pandas==2.2.2
+python-dateutil==2.9.0.post0
+
+================================================================================
+FILE: tools/runmetrics_update_local.py
+================================================================================
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import json
+import os
+import sys
+import time
+from dataclasses import dataclass
+from datetime import datetime, timezone, timedelta, date
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import requests
+from dateutil import parser as dtparser
+from dotenv import load_dotenv
+
+ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = ROOT / "data"
+STRAVA_DIR = DATA_DIR / "strava"
+DOCS_DATA_DIR = ROOT / "docs" / "data"
+STATE_PATH = DATA_DIR / "state.json"
+
+STRAVA_OAUTH_TOKEN_URL = "https://www.strava.com/oauth/token"
+STRAVA_ACTIVITIES_URL = "https://www.strava.com/api/v3/athlete/activities"
+
+DEFAULT_HRMAX = 190.0
+TAU_CTL = 42.0
+TAU_ATL = 7.0
+
+def utc_now_iso() -&gt; str:
+    return datetime.now(timezone.utc).isoformat()
+
+def ensure_dirs() -&gt; None:
+    STRAVA_DIR.mkdir(parents=True, exist_ok=True)
+    DOCS_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+def load_state() -&gt; Dict[str, Any]:
+    if STATE_PATH.exists():
+        try:
+            return json.loads(STATE_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+    return {}
+
+def save_state(st: Dict[str, Any]) -&gt; None:
+    STATE_PATH.write_text(json.dumps(st, indent=2, sort_keys=True), encoding="utf-8")
+
+def require_env(name: str) -&gt; str:
+    v = os.getenv(name)
+    if not v:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return v
+
+def iso_to_dt(s: str) -&gt; datetime:
+    dt = dtparser.isoparse(s)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+def dt_to_day(dts: datetime) -&gt; date:
+    return dts.astimezone(timezone.utc).date()
+
+@dataclass
+class StravaTokens:
+    access_token: str
+    refresh_token: str
+    expires_at: int
+
+def refresh_access_token(client_id: str, client_secret: str, refresh_token: str) -&gt; StravaTokens:
+    payload = {
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "grant_type": "refresh_token",
+        "refresh_token": refresh_token,
+    }
+    r = requests.post(STRAVA_OAUTH_TOKEN_URL, data=payload, timeout=30)
+    r.raise_for_status()
+    j = r.json()
+    return StravaTokens(
+        access_token=j["access_token"],
+        refresh_token=j.get("refresh_token", refresh_token),
+        expires_at=int(j["expires_at"]),
+    )
+
+def fetch_activities(access_token: str, after_epoch: Optional[int], per_page: int = 200, max_pages: int = 50) -&gt; List[Dict[str, Any]]:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    out: List[Dict[str, Any]] = []
+    page = 1
+    while page &lt;= max_pages:
+        params: Dict[str, Any] = {"per_page": per_page, "page": page}
+        if after_epoch is not None:
+            params["after"] = int(after_epoch)
+        r = requests.get(STRAVA_ACTIVITIES_URL, headers=headers, params=params, timeout=30)
+        if r.status_code == 429:
+            time.sleep(2.0)
+            continue
+        r.raise_for_status()
+        batch = r.json()
+        if not batch:
+            break
+        out.extend(batch)
+        if len(batch) &lt; per_page:
+            break
+        page += 1
+    return out
+
+def hrmax_observed(activities: List[Dict[str, Any]]) -&gt; float:
+    vals = []
+    for a in activities:
+        mh = a.get("max_heartrate")
+        if mh is not None:
+            try:
+                vals.append(float(mh))
+            except Exception:
+                pass
+    return max(vals) if vals else DEFAULT_HRMAX
+
+def load_proxy(activity: Dict[str, Any], hrmax: float) -&gt; Tuple[float, bool]:
+    mt = activity.get("moving_time")
+    if not mt:
+        return 0.0, False
+    dur_min = float(mt) / 60.0
+    avg_hr = activity.get("average_heartrate")
+    if avg_hr is not None and hrmax and hrmax &gt; 0:
+        x = float(avg_hr) / float(hrmax)
+        return dur_min * (x * x) * 100.0, True
+    return dur_min * 35.0, False
+
+def ewma_update(prev: float, x: float, tau: float) -&gt; float:
+    return prev + (x - prev) / float(tau)
+
+def build_daily_series(activities: List[Dict[str, Any]], days: int = 365) -&gt; Dict[str, Any]:
+    acts = []
+    for a in activities:
+        sd = a.get("start_date")
+        if not sd:
+            continue
+        try:
+            d = dt_to_day(iso_to_dt(sd))
+        except Exception:
+            continue
+        acts.append((d, a))
+
+    today = datetime.now(timezone.utc).date()
+    start = today - timedelta(days=days - 1)
+    dates = [start + timedelta(days=i) for i in range(days)]
+
+    if not acts:
+        series = [{"date": d.isoformat(), "daily_load": 0.0, "ctl": 0.0, "atl": 0.0, "tsb": 0.0} for d in dates]
+        return {"status": "ok", "generated_at": utc_now_iso(), "hrmax": DEFAULT_HRMAX, "series": series}
+
+    hrmax = hrmax_observed([a for _, a in acts])
+
+    daily: Dict[date, float] = {}
+    for d, a in acts:
+        load, _ = load_proxy(a, hrmax)
+        daily[d] = daily.get(d, 0.0) + float(load)
+
+    loads = [daily.get(d, 0.0) for d in dates]
+
+    ctl = 0.0
+    atl = 0.0
+    series = []
+    for d, x in zip(dates, loads):
+        ctl = ewma_update(ctl, x, TAU_CTL)
+        atl = ewma_update(atl, x, TAU_ATL)
+        series.append({"date": d.isoformat(), "daily_load": float(x), "ctl": float(ctl), "atl": float(atl), "tsb": float(ctl - atl)})
+
+    zones = {
+        "status": "ok",
+        "generated_at": utc_now_iso(),
+        "hrmax": float(hrmax),
+        "lt1_hr": float(0.83 * hrmax),
+        "lt2_hr": float(0.88 * hrmax),
+        "note": "Zone thresholds are heuristic fractions of observed HRmax for offline static publishing.",
+    }
+
+    zmins = {z: 0.0 for z in ["Z1", "Z2", "Z3", "Z4", "Z5"]}
+    cutoff = today - timedelta(days=6)
+    for d, a in acts:
+        if d &lt; cutoff:
+            continue
+        mt = a.get("moving_time")
+        hr = a.get("average_heartrate")
+        if not mt or hr is None:
+            continue
+        frac = float(hr) / float(hrmax) if hrmax else 0.0
+        mins = float(mt) / 60.0
+        if frac &lt; 0.75:
+            zmins["Z1"] += mins
+        elif frac &lt; 0.83:
+            zmins["Z2"] += mins
+        elif frac &lt; 0.88:
+            zmins["Z3"] += mins
+        elif frac &lt; 0.93:
+            zmins["Z4"] += mins
+        else:
+            zmins["Z5"] += mins
+
+    zone_eff = {"status": "ok", "generated_at": utc_now_iso(), "days": 7, "zones": {z: {"minutes": int(round(m))} for z, m in zmins.items()}}
+
+    return {"status": "ok", "generated_at": utc_now_iso(), "hrmax": float(hrmax), "series": series, "zones": zones, "zone_effort_1w": zone_eff}
+
+def simplify_activity(a: Dict[str, Any]) -&gt; Dict[str, Any]:
+    sd = a.get("start_date")
+    d_iso = None
+    if sd:
+        try:
+            d_iso = iso_to_dt(sd).isoformat()
+        except Exception:
+            d_iso = sd
+    dist_m = a.get("distance")
+    mt = a.get("moving_time")
+    pace_min_per_km = None
+    if dist_m and mt and dist_m &gt; 0:
+        pace_s_per_km = float(mt) / (float(dist_m) / 1000.0)
+        pace_min_per_km = pace_s_per_km / 60.0
+    avg_hr = a.get("average_heartrate")
+    ef = None
+    if dist_m and avg_hr:
+        try:
+            ef = float(dist_m) / float(avg_hr)
+        except Exception:
+            ef = None
+    return {
+        "id": int(a["id"]) if "id" in a else None,
+        "date": d_iso,
+        "name": a.get("name"),
+        "sport_type": a.get("sport_type") or a.get("type"),
+        "distance_km": (float(dist_m) / 1000.0) if dist_m else None,
+        "pace_min_per_km": pace_min_per_km,
+        "avg_hr": float(avg_hr) if avg_hr is not None else None,
+        "ef": ef,
+    }
+
+def dedupe_by_id(existing: List[Dict[str, Any]], new: List[Dict[str, Any]]) -&gt; List[Dict[str, Any]]:
+    by_id: Dict[int, Dict[str, Any]] = {}
+    for a in existing:
+        if "id" in a:
+            by_id[int(a["id"])] = a
+    for a in new:
+        if "id" in a:
+            by_id[int(a["id"])] = a
+    def key(a: Dict[str, Any]) -&gt; float:
+        sd = a.get("start_date")
+        if not sd:
+            return 0.0
+        try:
+            return iso_to_dt(sd).timestamp()
+        except Exception:
+            return 0.0
+    merged = list(by_id.values())
+    merged.sort(key=key, reverse=True)
+    return merged
+
+def main() -&gt; int:
+    load_dotenv(ROOT / ".env", override=False)
+    load_dotenv(ROOT / ".env.local", override=False)
+
+    ensure_dirs()
+
+    try:
+        cid = require_env("STRAVA_CLIENT_ID")
+        csec = require_env("STRAVA_CLIENT_SECRET")
+        rtok = require_env("STRAVA_REFRESH_TOKEN")
+    except Exception as e:
+        print(f"[runmetrics] {e}", file=sys.stderr)
+        return 2
+
+    st = load_state()
+    after_epoch = st.get("strava_after_epoch")
+    if after_epoch is None:
+        after_epoch = int((datetime.now(timezone.utc) - timedelta(days=400)).timestamp())
+
+    toks = refresh_access_token(cid, csec, rtok)
+    st["strava_token_expires_at"] = toks.expires_at
+    st["updated_at"] = utc_now_iso()
+    save_state(st)
+
+    new_acts = fetch_activities(toks.access_token, after_epoch=after_epoch, per_page=200, max_pages=50)
+
+    raw_path = STRAVA_DIR / "activities_raw.json"
+    existing = []
+    if raw_path.exists():
+        try:
+            existing = json.loads(raw_path.read_text(encoding="utf-8"))
+        except Exception:
+            existing = []
+
+    merged = dedupe_by_id(existing, new_acts)
+    raw_path.write_text(json.dumps(merged, indent=2), encoding="utf-8")
+
+    max_ts = None
+    for a in merged:
+        sd = a.get("start_date")
+        if not sd:
+            continue
+        try:
+            ts = iso_to_dt(sd).timestamp()
+            max_ts = ts if (max_ts is None or ts &gt; max_ts) else max_ts
+        except Exception:
+            continue
+    if max_ts is not None:
+        st["strava_after_epoch"] = int(max_ts) - 24 * 3600
+    st["updated_at"] = utc_now_iso()
+    save_state(st)
+
+    daily = build_daily_series(merged, days=365)
+    recent_items = [simplify_activity(a) for a in merged[:50]]
+    recent = {"status": "ok", "generated_at": utc_now_iso(), "items": recent_items}
+
+    (DOCS_DATA_DIR / "load_365.json").write_text(json.dumps({
+        "status": "ok",
+        "generated_at": daily.get("generated_at"),
+        "hrmax": daily.get("hrmax"),
+        "series": daily.get("series"),
+    }, indent=2), encoding="utf-8")
+    (DOCS_DATA_DIR / "recent.json").write_text(json.dumps(recent, indent=2), encoding="utf-8")
+    (DOCS_DATA_DIR / "zones.json").write_text(json.dumps(daily.get("zones", {"status": "insufficient_data"}), indent=2), encoding="utf-8")
+    (DOCS_DATA_DIR / "zone_effort_1w.json").write_text(json.dumps(daily.get("zone_effort_1w", {"status": "insufficient_data"}), indent=2), encoding="utf-8")
+    (DOCS_DATA_DIR / "meta.json").write_text(json.dumps({
+        "status": "ok",
+        "generated_at": utc_now_iso(),
+        "counts": {"activities_total": len(merged), "recent_items": len(recent_items), "series_days": len(daily.get("series", []))},
+    }, indent=2), encoding="utf-8")
+
+    print("[runmetrics] OK: wrote docs/data/*.json")
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+</pre>
+</body>
+</html>
