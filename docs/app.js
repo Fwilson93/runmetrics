@@ -117,13 +117,100 @@ function makeThresholdChart(thresholdHistory) {
   ], 'bpm');
 }
 
+
+function renderScienceCards(summary, thresholdHistory, driftSummary, matchedRuns) {
+  const el = document.getElementById('scienceCards');
+  if (!el) return;
+
+  const latest = thresholdHistory.latest || (
+    thresholdHistory.items && thresholdHistory.items.length
+      ? thresholdHistory.items[thresholdHistory.items.length - 1]
+      : null
+  );
+
+  const driftItems = driftSummary.items || [];
+  const lastDrift = driftItems.length ? driftItems[driftItems.length - 1] : null;
+  const matchedCount = matchedRuns.items ? matchedRuns.items.length : 0;
+
+  el.innerHTML = [
+    card('Threshold proxy', latest ? fmt.format(latest.threshold_hr_proxy) : '—', latest ? `bpm; ${latest.confidence} confidence` : 'no stream estimate yet'),
+    card('Eligible windows', latest ? latest.eligible_windows : '—', 'rolling lookback'),
+    card('Latest drift', lastDrift ? fmt.format(lastDrift.efficiency_change_pct) : '—', '% efficiency change'),
+    card('Matched groups', matchedCount, 'approximate distance/elevation matches')
+  ].join('');
+}
+
+function makeDriftChart(driftSummary) {
+  const canvas = document.getElementById('driftChart');
+  const note = document.getElementById('driftNote');
+
+  if (!canvas || !note) return;
+
+  const items = driftSummary.items || [];
+
+  if (!items.length) {
+    note.textContent = 'No drift summary yet. More stream files or longer steady runs are needed.';
+    return;
+  }
+
+  note.textContent = driftSummary.method || '';
+
+  makeLineChart('driftChart', items.map(d => d.date), [
+    {
+      label: 'Efficiency change %',
+      data: items.map(d => d.efficiency_change_pct),
+      borderColor: '#67e8f9',
+      backgroundColor: 'transparent',
+      tension: 0.25,
+      borderWidth: 3
+    },
+    {
+      label: 'HR rise bpm',
+      data: items.map(d => d.hr_rise_bpm),
+      borderColor: '#ffd166',
+      backgroundColor: 'transparent',
+      tension: 0.25
+    }
+  ], '% / bpm');
+}
+
+function renderMatchedRuns(matchedRuns) {
+  const table = document.querySelector('#matchedRunsTable tbody');
+  const note = document.getElementById('matchedRunsNote');
+
+  if (!table || !note) return;
+
+  const items = matchedRuns.items || [];
+  note.textContent = matchedRuns.method || '';
+
+  if (!items.length) {
+    table.innerHTML = '<tr><td colspan="9">No matched-run groups yet.</td></tr>';
+    return;
+  }
+
+  table.innerHTML = items.map(r => `
+    <tr>
+      <td>${r.label}</td>
+      <td>${r.count}</td>
+      <td>${r.latest_date}</td>
+      <td>${fmt.format(r.typical_distance_km)}</td>
+      <td>${fmt.format(r.typical_elev_gain_m)}</td>
+      <td>${pace(r.latest_pace_min_per_km)}</td>
+      <td>${pace(r.best_pace_min_per_km)}</td>
+      <td>${r.latest_vs_previous_median_pct === null ? '—' : fmt.format(r.latest_vs_previous_median_pct) + '%'}</td>
+      <td>${r.latest_avg_hr === null ? '—' : fmt.format(r.latest_avg_hr)}</td>
+    </tr>`).join('');
+}
+
 async function main() {
-  const [summary, daily, weekly, recent, thresholdHistory] = await Promise.all([
+  const [summary, daily, weekly, recent, thresholdHistory, driftSummary, matchedRuns] = await Promise.all([
     loadJson('./data/summary.json'),
     loadJson('./data/daily_metrics.json'),
     loadJson('./data/weekly_metrics.json'),
     loadJson('./data/activities_recent.json'),
-    loadJsonOptional('./data/threshold_history.json', { items: [], method: '' })
+    loadJsonOptional('./data/threshold_history.json', { items: [], method: '', latest: null }),
+    loadJsonOptional('./data/drift_summary.json', { items: [], method: '' }),
+    loadJsonOptional('./data/matched_runs.json', { items: [], method: '' })
   ]);
 
   document.getElementById('generated').textContent = `Updated ${new Date(summary.generated_at_utc).toLocaleString('en-GB')}`;
@@ -161,7 +248,10 @@ async function main() {
     { label: 'Mean pace, active days', data: daily.map(d => d.pace_min_per_km), borderColor: '#c084fc', backgroundColor: 'transparent', tension: 0.2 }
   ], 'min/km');
 
+  renderScienceCards(summary, thresholdHistory, driftSummary, matchedRuns);
   makeThresholdChart(thresholdHistory);
+  makeDriftChart(driftSummary);
+  renderMatchedRuns(matchedRuns);
 
   const tbody = document.querySelector('#recentTable tbody');
   tbody.innerHTML = recent.map(r => `

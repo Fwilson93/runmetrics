@@ -19,6 +19,7 @@
 
   <main>
     <section class="cards" id="cards"></section>
+    <section class="cards" id="scienceCards"></section>
 
     <section class="panel advice-panel">
       <h2>Current advice</h2>
@@ -37,6 +38,27 @@
       <h2>Estimated HR threshold and zone trend</h2>
       <canvas id="thresholdZones"></canvas>
       <p id="thresholdNote" class="small"></p>
+    </section>
+
+    <section class="panel wide-panel">
+      <h2>HR drift / aerobic decoupling</h2>
+      <canvas id="driftChart"></canvas>
+      <p id="driftNote" class="small"></p>
+    </section>
+
+    <section class="panel wide-panel">
+      <h2>Matched runs</h2>
+      <div class="table-wrap">
+        <table id="matchedRunsTable">
+          <thead>
+            <tr>
+              <th>Group</th><th>Count</th><th>Latest</th><th>Typical km</th><th>Typical elev.</th><th>Latest pace</th><th>Best pace</th><th>vs previous</th><th>Latest HR</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p id="matchedRunsNote" class="small"></p>
     </section>
 
     <section class="panel">

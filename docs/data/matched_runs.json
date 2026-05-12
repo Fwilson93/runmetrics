@@ -1,0 +1,19 @@
+{
+  "generated_at_utc": "2026-05-12T08:51:49.002614+00:00",
+  "method": "Approximate Strava matched-runs style grouping using local activity summaries only: sport + rounded distance + rounded elevation. No route, GPS, polyline or activity IDs are exported.",
+  "items": [
+    {
+      "label": "Matched run 1",
+      "match_basis": "similar sport, distance and elevation bins; not GPS route matching",
+      "count": 2,
+      "first_date": "2026-05-05",
+      "latest_date": "2026-05-12",
+      "typical_distance_km": 10.2,
+      "typical_elev_gain_m": 148.0,
+      "latest_pace_min_per_km": 4.43,
+      "best_pace_min_per_km": 4.43,
+      "latest_vs_previous_median_pct": -2.6,
+      "latest_avg_hr": 160.9
+    }
+  ]
+}

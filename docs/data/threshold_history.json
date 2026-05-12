@@ -1,6 +1,19 @@
 {
-  "generated_at_utc": "2026-05-12T08:33:01.938381+00:00",
-  "method": "Proxy estimate from local streams using filtered 20-minute moving HR/speed windows; rolling 90-day 85th percentile of candidate mean HR. This is not a lab lactate-threshold or ventilatory-threshold measurement.",
+  "generated_at_utc": "2026-05-12T08:51:48.999075+00:00",
+  "latest": {
+    "date": "2026-05-12",
+    "threshold_hr_proxy": 169.2,
+    "threshold_pace_proxy_min_per_km": 4.71,
+    "eligible_windows": 16,
+    "confidence": "high",
+    "z1_upper": 144.0,
+    "z2_lower": 144.0,
+    "z2_upper": 151.0,
+    "z3_upper": 159.0,
+    "z4_upper": 167.0,
+    "z5_lower": 169.0
+  },
+  "method": "Proxy estimate from local streams using filtered 20-minute moving HR/speed windows; rolling 90-day 85th percentile of candidate mean HR. Not a lab lactate-threshold or ventilatory-threshold measurement.",
   "zone_model": "Threshold-derived bands: Z1 <85%, Z2 85-89%, Z3 90-94%, Z4 95-99%, Z5 >=100% of threshold_hr_proxy.",
   "items": [
     {

@@ -38,7 +38,7 @@ python scripts/fetch_strava_streams.py --after-days 120 --max-new 25
 echo
 echo "[2c/5] Analysing local streams for threshold/drift summaries..."
 
-python scripts/analyse_streams.py --window-min 20 --rolling-days 90
+python scripts/analyse_streams_plus.py --window-min 20 --rolling-days 90
 
 echo
 echo "[3/5] Privacy/secret scan of docs/..."
@@ -69,7 +69,11 @@ git add \
   docs/data/activities_recent.json \
   docs/data/threshold_history.json \
   docs/data/drift_summary.json \
+  docs/data/matched_runs.json \
+  docs/data/threshold_history.json \
+  docs/data/drift_summary.json \
   scripts/update_static_site.py \
+  scripts/analyse_streams_plus.py \
   scripts/fetch_strava_streams.py \
   scripts/analyse_streams.py \
   update.sh
