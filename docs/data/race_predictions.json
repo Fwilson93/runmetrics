@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-12T14:01:29.992535+00:00",
+  "generated_at_utc": "2026-05-12T14:08:05.388863+00:00",
   "date": "2026-05-12",
   "method": "Transparent heuristic. Race order is 5K, 10K, 1/2M, marathon, 50K, 100K. Fitness estimates blend threshold pace proxy with observed activity equivalents. Trend compares current performance with activity-derived equivalents from roughly three months ago. Readiness is separately gated by longest recent run and 28-day volume.",
   "threshold_anchor": {
@@ -117,7 +117,24 @@
         "rationale": "Readiness is ready. For 5K, the biggest gain is likely from controlled quality rather than simply adding long-run distance.",
         "training_emphasis": "Use threshold intervals, short tempo blocks, strides, and enough easy volume to absorb them."
       },
-      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate."
+      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate.",
+      "distance": "5K",
+      "observed_best_seconds": 1193.6,
+      "observed_best_time": "19:54",
+      "observed_best_pace": "3:59/km",
+      "observed_best_source": {
+        "activity_id": "17994846938",
+        "activity_name": "Tempo 4km",
+        "activity_start_date": "2026-04-06T06:23:07Z",
+        "activity_distance_km": 6.011,
+        "start_distance_m": 982.5,
+        "end_distance_m": 5982.5
+      },
+      "model_prediction_seconds": null,
+      "anchored_prediction_seconds": 1193.6,
+      "anchored_prediction_time": "19:54",
+      "anchored_prediction_pace": "3:59/km",
+      "prediction_basis": "observed_best_effort_only"
     },
     {
       "race": "10K",
@@ -220,7 +237,24 @@
         "rationale": "Readiness is ready. For 10K, the biggest gain is likely from controlled quality rather than simply adding long-run distance.",
         "training_emphasis": "Use threshold intervals, short tempo blocks, strides, and enough easy volume to absorb them."
       },
-      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate."
+      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate.",
+      "distance": "10K",
+      "observed_best_seconds": 2630.6,
+      "observed_best_time": "43:51",
+      "observed_best_pace": "4:23/km",
+      "observed_best_source": {
+        "activity_id": "18062144507",
+        "activity_name": "Morning Run",
+        "activity_start_date": "2026-04-11T06:34:49Z",
+        "activity_distance_km": 21.209,
+        "start_distance_m": 11097.6,
+        "end_distance_m": 21097.6
+      },
+      "model_prediction_seconds": null,
+      "anchored_prediction_seconds": 2630.6,
+      "anchored_prediction_time": "43:51",
+      "anchored_prediction_pace": "4:23/km",
+      "prediction_basis": "observed_best_effort_only"
     },
     {
       "race": "1/2M",
@@ -323,7 +357,24 @@
         "rationale": "No dominant limiter was identified from the current public-safe metrics.",
         "training_emphasis": "Keep training consistent and reassess after more comparable data accumulates."
       },
-      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate."
+      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate.",
+      "distance": "Half marathon",
+      "observed_best_seconds": 5614.1,
+      "observed_best_time": "1:33:34",
+      "observed_best_pace": "4:26/km",
+      "observed_best_source": {
+        "activity_id": "18062144507",
+        "activity_name": "Morning Run",
+        "activity_start_date": "2026-04-11T06:34:49Z",
+        "activity_distance_km": 21.209,
+        "start_distance_m": 2.5,
+        "end_distance_m": 21100.0
+      },
+      "model_prediction_seconds": null,
+      "anchored_prediction_seconds": 5614.1,
+      "anchored_prediction_time": "1:33:34",
+      "anchored_prediction_pace": "4:26/km",
+      "prediction_basis": "observed_best_effort_only"
     },
     {
       "race": "Marathon",
@@ -513,7 +564,13 @@
       "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate."
     }
   ],
+  "anchoring": {
+    "generated_at_utc": "2026-05-12T14:08:05Z",
+    "source": "docs/data/best_efforts.json",
+    "rule": "Displayed anchored prediction is min(model prediction, observed rolling best effort) for matching distance.",
+    "anchored_count": 0
+  },
   "trend_method": "Trend compares the midpoint of today's estimated range with the previous stored snapshot for the same race. Negative time change means faster/improving.",
   "training_focus_method": "Training focus is rule-based from readiness, long-run exposure, 28-day volume, fade, run-type balance and easy-efficiency trend.",
-  "enhanced_at_utc": "2026-05-12T14:01:30.285215+00:00"
+  "enhanced_at_utc": "2026-05-12T14:08:05.718710+00:00"
 }
