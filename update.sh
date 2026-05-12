@@ -34,6 +34,7 @@ echo "[2b/5] Updating local/private Strava stream cache..."
 # Local-only stream cache for later threshold / HR-drift analysis.
 # This writes to data/strava/streams/, which is gitignored and not published.
 python scripts/fetch_strava_streams.py --after-days 120 --max-new 25 --include-latlng
+python scripts/generate_best_efforts.py
 
 echo
 echo "[2c/5] Analysing local streams for threshold/drift summaries..."
