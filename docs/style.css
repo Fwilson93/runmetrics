@@ -78,3 +78,13 @@ footer { color: var(--muted); padding: 0 clamp(1rem, 4vw, 4rem) 3rem; }
   header { flex-direction: column; align-items: flex-start; }
   .generated { text-align: left; }
 }
+
+
+.wide-panel {
+  grid-column: 1 / -1;
+}
+
+.wide-panel canvas {
+  height: 460px !important;
+  max-height: 460px;
+}

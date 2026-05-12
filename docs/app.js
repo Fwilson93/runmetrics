@@ -7,6 +7,15 @@ async function loadJson(path) {
   return await res.json();
 }
 
+async function loadJsonOptional(path, fallback) {
+  try {
+    return await loadJson(path);
+  } catch (err) {
+    console.warn(`Optional data not available: ${path}`, err);
+    return fallback;
+  }
+}
+
 function pace(v) {
   if (v === null || v === undefined || Number.isNaN(Number(v))) return '—';
   const mins = Math.floor(Number(v));
@@ -51,12 +60,70 @@ function makeBarChart(id, labels, datasets, yTitle = '') {
   });
 }
 
+
+function makeThresholdChart(thresholdHistory) {
+  const canvas = document.getElementById('thresholdZones');
+  const note = document.getElementById('thresholdNote');
+
+  if (!canvas || !note) return;
+
+  const items = thresholdHistory && thresholdHistory.items ? thresholdHistory.items : [];
+
+  if (!items.length) {
+    note.textContent = 'No threshold-history data yet. Run the stream fetcher and stream analysis first.';
+    return;
+  }
+
+  note.textContent = `${thresholdHistory.method} ${thresholdHistory.zone_model || ''}`;
+
+  makeLineChart('thresholdZones', items.map(d => d.date), [
+    {
+      label: 'Estimated threshold HR proxy',
+      data: items.map(d => d.threshold_hr_proxy),
+      borderColor: '#f472b6',
+      backgroundColor: 'transparent',
+      tension: 0.25,
+      borderWidth: 3
+    },
+    {
+      label: 'Z2 lower',
+      data: items.map(d => d.z2_lower),
+      borderColor: 'rgba(126,231,135,0.7)',
+      backgroundColor: 'transparent',
+      tension: 0.25,
+      borderDash: [6, 4]
+    },
+    {
+      label: 'Z2 upper',
+      data: items.map(d => d.z2_upper),
+      borderColor: 'rgba(126,231,135,0.95)',
+      backgroundColor: 'transparent',
+      tension: 0.25
+    },
+    {
+      label: 'Z3 upper',
+      data: items.map(d => d.z3_upper),
+      borderColor: 'rgba(255,209,102,0.95)',
+      backgroundColor: 'transparent',
+      tension: 0.25
+    },
+    {
+      label: 'Z4 upper',
+      data: items.map(d => d.z4_upper),
+      borderColor: 'rgba(255,123,114,0.95)',
+      backgroundColor: 'transparent',
+      tension: 0.25
+    }
+  ], 'bpm');
+}
+
 async function main() {
-  const [summary, daily, weekly, recent] = await Promise.all([
+  const [summary, daily, weekly, recent, thresholdHistory] = await Promise.all([
     loadJson('./data/summary.json'),
     loadJson('./data/daily_metrics.json'),
     loadJson('./data/weekly_metrics.json'),
-    loadJson('./data/activities_recent.json')
+    loadJson('./data/activities_recent.json'),
+    loadJsonOptional('./data/threshold_history.json', { items: [], method: '' })
   ]);
 
   document.getElementById('generated').textContent = `Updated ${new Date(summary.generated_at_utc).toLocaleString('en-GB')}`;
@@ -93,6 +160,8 @@ async function main() {
   makeLineChart('paceTrend', daily.map(d => d.date), [
     { label: 'Mean pace, active days', data: daily.map(d => d.pace_min_per_km), borderColor: '#c084fc', backgroundColor: 'transparent', tension: 0.2 }
   ], 'min/km');
+
+  makeThresholdChart(thresholdHistory);
 
   const tbody = document.querySelector('#recentTable tbody');
   tbody.innerHTML = recent.map(r => `

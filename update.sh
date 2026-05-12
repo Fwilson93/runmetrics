@@ -36,6 +36,11 @@ echo "[2b/5] Updating local/private Strava stream cache..."
 python scripts/fetch_strava_streams.py --after-days 120 --max-new 25
 
 echo
+echo "[2c/5] Analysing local streams for threshold/drift summaries..."
+
+python scripts/analyse_streams.py --window-min 20 --rolling-days 90
+
+echo
 echo "[3/5] Privacy/secret scan of docs/..."
 
 # These should never appear in public GitHub Pages output.
@@ -62,8 +67,11 @@ git add \
   docs/data/daily_metrics.json \
   docs/data/weekly_metrics.json \
   docs/data/activities_recent.json \
+  docs/data/threshold_history.json \
+  docs/data/drift_summary.json \
   scripts/update_static_site.py \
   scripts/fetch_strava_streams.py \
+  scripts/analyse_streams.py \
   update.sh
 
 echo
