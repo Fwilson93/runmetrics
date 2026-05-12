@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-12T09:25:38.006443+00:00",
+  "generated_at_utc": "2026-05-12T09:29:13.092918+00:00",
   "method": "Matched locally using GPS route-shape similarity. Public output contains anonymous aggregate efficiency stats only.",
   "privacy": "GPS is used locally only. Published JSON contains no coordinates, polylines, maps, activity IDs, activity names, route names or start/end points.",
   "efficiency_definition": "Primary fitness signal is speed_kmh / average_heart_rate_bpm. Higher is better.",

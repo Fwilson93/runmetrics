@@ -42,13 +42,14 @@ python scripts/analyse_streams_plus.py --window-min 20 --rolling-days 90
 
 echo
 echo "[2c-extra/5] Matching repeated runs locally by GPS efficiency..."
-python scripts/match_runs_by_gps_efficiency.py --threshold-m 90 --min-group-size 2
+python scripts/run_gps_match_from_config.py
 
 echo
 echo "[2d/5] Generating training insights..."
 
 python scripts/generate_training_insights.py
 python scripts/generate_training_v2.py
+python scripts/generate_data_quality.py
 
 echo
 echo "[3/5] Privacy/secret scan of docs/..."
@@ -71,15 +72,18 @@ echo
 echo "[4/5] Staging public dashboard files..."
 
 git add \
+  config/runmetrics_config.json \
   docs/index.html \
   docs/app.js \
   docs/style.css \
+  docs/data_quality.js \
   docs/training_v2.js \
   docs/insights.js \
   docs/data/summary.json \
   docs/data/daily_metrics.json \
   docs/data/weekly_metrics.json \
   docs/data/activities_recent.json \
+  docs/data/data_quality.json \
   docs/data/run_types.json \
   docs/data/efficiency_trends.json \
   docs/data/matched_route_verdicts.json \
@@ -93,6 +97,8 @@ git add \
   docs/data/threshold_history.json \
   docs/data/drift_summary.json \
   scripts/update_static_site.py \
+  scripts/generate_data_quality.py \
+  scripts/run_gps_match_from_config.py \
   scripts/generate_training_v2.py \
   scripts/match_runs_by_gps_efficiency.py \
   scripts/generate_training_insights.py \

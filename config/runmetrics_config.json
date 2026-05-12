@@ -1,0 +1,24 @@
+{
+  "classification": {
+    "long_run_min_km": 16,
+    "long_run_min_min": 95,
+    "hilly_elev_m_per_km": 35,
+    "steady_hr_ratio": 0.84,
+    "thresholdish_hr_ratio": 0.92,
+    "hard_hr_ratio": 0.98,
+    "recovery_max_min": 35,
+    "recovery_hr_ratio": 0.78,
+    "easy_efficiency_min_km": 3,
+    "easy_efficiency_max_elev_m_per_km": 35
+  },
+  "gps_matching": {
+    "threshold_m": 90,
+    "distance_tolerance_pct": 12,
+    "min_group_size": 2,
+    "n_points": 80
+  },
+  "display": {
+    "matched_runs_metric_label": "Speed per heartbeat",
+    "show_data_quality_panel": true
+  }
+}

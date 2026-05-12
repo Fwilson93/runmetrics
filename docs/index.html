@@ -83,6 +83,12 @@
     <section class="panel wide-panel"><h2>Training block review</h2><div id="blockReview" class="mini-grid"></div></section>
     <section class="panel wide-panel"><h2>Fun stats v2</h2><div id="funStatsV2" class="mini-grid"></div></section>
 
+
+    <section class="panel wide-panel">
+      <h2>Data quality / coverage</h2>
+      <div id="dataQualityPanel"></div>
+    </section>
+
     <section class="grid">
       <div class="panel"><h2>Weekly distance</h2><canvas id="weeklyDistance"></canvas></div>
       <div class="panel"><h2>CTL / ATL / TSB</h2><canvas id="pmc"></canvas></div>
@@ -108,7 +114,7 @@
         <table id="matchedRunsTable">
           <thead>
             <tr>
-              <th>Group</th><th>Count</th><th>Latest</th><th>Typical km</th><th>Typical elev.</th><th>Latest pace</th><th>Latest HR</th><th>Efficiency</th><th>Eff. vs previous</th><th>Fitness signal</th>
+              <th>Group</th><th>Count</th><th>Latest</th><th>Typical km</th><th>Typical elev.</th><th>Latest pace</th><th>Latest HR</th><th>Speed per heartbeat</th><th>SPH vs previous</th><th>Fitness signal</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -140,5 +146,6 @@
   <script src="app.js"></script>
   <script src="insights.js"></script>
   <script src="training_v2.js"></script>
+  <script src="data_quality.js"></script>
 </body>
 </html>
