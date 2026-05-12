@@ -33,12 +33,21 @@ echo "[2b/5] Updating local/private Strava stream cache..."
 
 # Local-only stream cache for later threshold / HR-drift analysis.
 # This writes to data/strava/streams/, which is gitignored and not published.
-python scripts/fetch_strava_streams.py --after-days 120 --max-new 25
+python scripts/fetch_strava_streams.py --after-days 120 --max-new 25 --include-latlng
 
 echo
 echo "[2c/5] Analysing local streams for threshold/drift summaries..."
 
 python scripts/analyse_streams_plus.py --window-min 20 --rolling-days 90
+
+echo
+echo "[2c-extra/5] Matching repeated runs locally by GPS efficiency..."
+python scripts/match_runs_by_gps_efficiency.py --threshold-m 90 --min-group-size 2
+
+echo
+echo "[2d/5] Generating training insights..."
+
+python scripts/generate_training_insights.py
 
 echo
 echo "[3/5] Privacy/secret scan of docs/..."
@@ -56,6 +65,8 @@ fi
 
 echo "OK: no obvious secrets/private Strava fields found in docs/."
 
+python scripts/audit_public_docs.py
+
 echo
 echo "[4/5] Staging public dashboard files..."
 
@@ -63,16 +74,21 @@ git add \
   docs/index.html \
   docs/app.js \
   docs/style.css \
+  docs/insights.js \
   docs/data/summary.json \
   docs/data/daily_metrics.json \
   docs/data/weekly_metrics.json \
   docs/data/activities_recent.json \
+  docs/data/insights.json \
   docs/data/threshold_history.json \
   docs/data/drift_summary.json \
   docs/data/matched_runs.json \
   docs/data/threshold_history.json \
   docs/data/drift_summary.json \
   scripts/update_static_site.py \
+  scripts/match_runs_by_gps_efficiency.py \
+  scripts/audit_public_docs.py \
+  scripts/generate_training_insights.py \
   scripts/analyse_streams_plus.py \
   scripts/fetch_strava_streams.py \
   scripts/analyse_streams.py \

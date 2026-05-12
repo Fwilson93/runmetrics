@@ -196,9 +196,10 @@ function renderMatchedRuns(matchedRuns) {
       <td>${fmt.format(r.typical_distance_km)}</td>
       <td>${fmt.format(r.typical_elev_gain_m)}</td>
       <td>${pace(r.latest_pace_min_per_km)}</td>
-      <td>${pace(r.best_pace_min_per_km)}</td>
-      <td>${r.latest_vs_previous_median_pct === null ? '—' : fmt.format(r.latest_vs_previous_median_pct) + '%'}</td>
       <td>${r.latest_avg_hr === null ? '—' : fmt.format(r.latest_avg_hr)}</td>
+      <td>${r.latest_efficiency_kmh_per_bpm === null || r.latest_efficiency_kmh_per_bpm === undefined ? '—' : fmt2.format(r.latest_efficiency_kmh_per_bpm)}</td>
+      <td>${r.latest_vs_previous_median_efficiency_pct === null || r.latest_vs_previous_median_efficiency_pct === undefined ? '—' : fmt.format(r.latest_vs_previous_median_efficiency_pct) + '%'}</td>
+      <td>${r.fitness_signal || '—'}</td>
     </tr>`).join('');
 }
 

@@ -1,0 +1,830 @@
+{
+  "generated_at_utc": "2026-05-12T09:15:45.721828+00:00",
+  "privacy": {
+    "public_site_policy": "Public outputs intentionally avoid GPS coordinates, polylines, maps, activity IDs, activity names, route names, start/end coordinates, and exact route fingerprints. Matched runs use rounded distance/elevation only.",
+    "home_address_risk_control": "No public field should be sufficient to reconstruct home location or habitual start/end points."
+  },
+  "suggested_next_run": {
+    "title": "Easy aerobic run",
+    "options": [
+      {
+        "rank": 1,
+        "title": "Easy aerobic run",
+        "session": "45–60 min easy.",
+        "why": "Current signals are mixed rather than clearly fresh or clearly overloaded.",
+        "intensity": "Keep it comfortable; finish feeling like you could do more."
+      },
+      {
+        "rank": 2,
+        "title": "Aerobic durability run",
+        "session": "60–80 min easy if legs are good.",
+        "why": "Useful for marathon/ultra development without needing high intensity.",
+        "intensity": "Watch for steady-run fade rather than chasing pace."
+      },
+      {
+        "rank": 3,
+        "title": "Light quality touch",
+        "session": "20–30 min easy plus 4–6 relaxed strides.",
+        "why": "A small stimulus if you want some sharpness without much load.",
+        "intensity": "Relaxed, not maximal."
+      }
+    ],
+    "inputs": {
+      "tsb": 0.9,
+      "acwr": 0.6,
+      "last_7d_distance_km": 10.1,
+      "last_7d_activity_days": 1,
+      "recent_drift_mean_pct": -4.5,
+      "threshold_confidence": "high"
+    }
+  },
+  "load_caution": {
+    "level": "low",
+    "score": 1,
+    "message": "Low caution: nothing obvious is flashing red in the current dashboard signals.",
+    "reasons": [
+      "recent steady-run fade is mild"
+    ]
+  },
+  "weekly_digest": [
+    "Latest weekly distance is 10.1 km.",
+    "Latest weekly load is 101.0 TRIMP-derived units.",
+    "Threshold proxy is 169.2 bpm with high confidence.",
+    "Recent steady-run fade averages -4.5%, which looks like mild fade.",
+    "Matched-runs table has 7 public-safe groups; the largest/most recent group is GPS matched route 5.",
+    "Rolling context: 10.1 km in 7 days and 74.3 km in 28 days."
+  ],
+  "aerobic_durability": {
+    "label": "fair",
+    "score": 65,
+    "recent_mean_efficiency_change_pct": -3.4,
+    "message": "Recent steady efforts show some fade, but not enough to panic.",
+    "plain_english": "This is the intuitive version of HR drift: if you get less speed for the same heartbeat in the second half of a steady run, the run is fading. Closer to 0% is better; strongly negative is worse."
+  },
+  "training_blocks": [
+    {
+      "label": "Last 4 weeks",
+      "days": 28,
+      "distance_km": 74.3,
+      "load": 675.0,
+      "elev_gain_m": 1135.0,
+      "active_days": 8,
+      "mean_km_per_week": 18.6
+    },
+    {
+      "label": "Last 8 weeks",
+      "days": 56,
+      "distance_km": 176.3,
+      "load": 1687.0,
+      "elev_gain_m": 2314.0,
+      "active_days": 16,
+      "mean_km_per_week": 22.0
+    },
+    {
+      "label": "Last 12 weeks",
+      "days": 84,
+      "distance_km": 307.6,
+      "load": 2962.0,
+      "elev_gain_m": 4121.0,
+      "active_days": 29,
+      "mean_km_per_week": 25.6
+    }
+  ],
+  "fun_stats": [
+    {
+      "label": "Longest day in public data window",
+      "value": "21.6 km",
+      "context": "2026-03-12"
+    },
+    {
+      "label": "Biggest load day",
+      "value": "238.0 load",
+      "context": "2026-04-11"
+    },
+    {
+      "label": "Biggest week in public data window",
+      "value": "38.5 km",
+      "context": "2026-03-09"
+    },
+    {
+      "label": "Fastest recent average pace",
+      "value": "4:10/km",
+      "context": "6.011 km on 2026-04-06"
+    },
+    {
+      "label": "Most repeated matched-run group",
+      "value": "6 similar efforts",
+      "context": "9.1 km / 122.0 m"
+    }
+  ],
+  "heatmap": [
+    {
+      "date": "2026-01-15",
+      "distance_km": 5.3,
+      "load": 9.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-01-16",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-01-17",
+      "distance_km": 5.8,
+      "load": 11.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-01-18",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-01-19",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-01-20",
+      "distance_km": 5.1,
+      "load": 9.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-01-21",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-01-22",
+      "distance_km": 8.1,
+      "load": 15.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-01-23",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-01-24",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-01-25",
+      "distance_km": 6.6,
+      "load": 68.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-01-26",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-01-27",
+      "distance_km": 6.5,
+      "load": 59.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-01-28",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-01-29",
+      "distance_km": 7.0,
+      "load": 76.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-01-30",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-01-31",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-01",
+      "distance_km": 7.0,
+      "load": 49.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-02-02",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-03",
+      "distance_km": 4.5,
+      "load": 39.0,
+      "bucket": 1
+    },
+    {
+      "date": "2026-02-04",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-05",
+      "distance_km": 5.0,
+      "load": 58.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-02-06",
+      "distance_km": 5.0,
+      "load": 60.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-02-07",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-08",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-09",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-10",
+      "distance_km": 4.7,
+      "load": 53.0,
+      "bucket": 1
+    },
+    {
+      "date": "2026-02-11",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-12",
+      "distance_km": 7.5,
+      "load": 94.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-02-13",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-14",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-15",
+      "distance_km": 9.0,
+      "load": 117.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-02-16",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-17",
+      "distance_km": 6.8,
+      "load": 59.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-02-18",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-19",
+      "distance_km": 9.0,
+      "load": 69.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-02-20",
+      "distance_km": 11.5,
+      "load": 126.0,
+      "bucket": 3
+    },
+    {
+      "date": "2026-02-21",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-22",
+      "distance_km": 8.1,
+      "load": 81.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-02-23",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-24",
+      "distance_km": 9.1,
+      "load": 66.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-02-25",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-26",
+      "distance_km": 15.2,
+      "load": 157.0,
+      "bucket": 3
+    },
+    {
+      "date": "2026-02-27",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-02-28",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-01",
+      "distance_km": 9.0,
+      "load": 93.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-03-02",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-03",
+      "distance_km": 7.1,
+      "load": 67.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-03-04",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-05",
+      "distance_km": 8.6,
+      "load": 73.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-03-06",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-07",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-08",
+      "distance_km": 6.1,
+      "load": 72.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-03-09",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-10",
+      "distance_km": 8.7,
+      "load": 86.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-03-11",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-12",
+      "distance_km": 21.6,
+      "load": 214.0,
+      "bucket": 4
+    },
+    {
+      "date": "2026-03-13",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-14",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-15",
+      "distance_km": 8.2,
+      "load": 83.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-03-16",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-17",
+      "distance_km": 9.1,
+      "load": 87.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-03-18",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-19",
+      "distance_km": 20.3,
+      "load": 176.0,
+      "bucket": 4
+    },
+    {
+      "date": "2026-03-20",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-21",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-22",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-23",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-24",
+      "distance_km": 9.1,
+      "load": 88.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-03-25",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-26",
+      "distance_km": 16.5,
+      "load": 189.0,
+      "bucket": 4
+    },
+    {
+      "date": "2026-03-27",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-28",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-29",
+      "distance_km": 8.7,
+      "load": 80.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-03-30",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-03-31",
+      "distance_km": 8.1,
+      "load": 64.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-04-01",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-02",
+      "distance_km": 12.1,
+      "load": 116.0,
+      "bucket": 3
+    },
+    {
+      "date": "2026-04-03",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-04",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-05",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-06",
+      "distance_km": 6.0,
+      "load": 63.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-04-07",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-08",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-09",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-10",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-11",
+      "distance_km": 21.2,
+      "load": 238.0,
+      "bucket": 4
+    },
+    {
+      "date": "2026-04-12",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-13",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-14",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-15",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-16",
+      "distance_km": 4.7,
+      "load": 35.0,
+      "bucket": 1
+    },
+    {
+      "date": "2026-04-17",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-18",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-19",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-20",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-21",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-22",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-23",
+      "distance_km": 5.4,
+      "load": 42.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-04-24",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-25",
+      "distance_km": 9.3,
+      "load": 96.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-04-26",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-27",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-28",
+      "distance_km": 9.3,
+      "load": 83.0,
+      "bucket": 2
+    },
+    {
+      "date": "2026-04-29",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-04-30",
+      "distance_km": 10.5,
+      "load": 95.0,
+      "bucket": 3
+    },
+    {
+      "date": "2026-05-01",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-05-02",
+      "distance_km": 14.7,
+      "load": 142.0,
+      "bucket": 3
+    },
+    {
+      "date": "2026-05-03",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-05-04",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-05-05",
+      "distance_km": 10.2,
+      "load": 81.0,
+      "bucket": 3
+    },
+    {
+      "date": "2026-05-06",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-05-07",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-05-08",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-05-09",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-05-10",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-05-11",
+      "distance_km": 0.0,
+      "load": 0.0,
+      "bucket": 0
+    },
+    {
+      "date": "2026-05-12",
+      "distance_km": 10.1,
+      "load": 101.0,
+      "bucket": 3
+    }
+  ]
+}

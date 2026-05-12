@@ -27,6 +27,54 @@
       <p class="small">Training guidance is heuristic and conservative. It is not medical advice.</p>
     </section>
 
+    <section class="panel wide-panel">
+      <h2>Suggested next run</h2>
+      <div id="suggestedNextRun" class="mini-grid"></div>
+    </section>
+
+    <section class="panel wide-panel">
+      <h2>Load caution</h2>
+      <div id="loadCaution"></div>
+    </section>
+
+    <section class="panel wide-panel">
+      <h2>This week in RunMetrics</h2>
+      <ul id="weeklyDigest"></ul>
+    </section>
+
+    <section class="panel wide-panel">
+      <h2>Aerobic durability</h2>
+      <div id="durabilityPanel"></div>
+    </section>
+
+    <section class="panel wide-panel">
+      <h2>Training blocks</h2>
+      <div class="table-wrap">
+        <table id="trainingBlocksTable">
+          <thead>
+            <tr><th>Block</th><th>km</th><th>km/week</th><th>Load</th><th>Elev. m</th><th>Active days</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel wide-panel">
+      <h2>Fun stats</h2>
+      <div id="funStats" class="mini-grid"></div>
+    </section>
+
+    <section class="panel wide-panel">
+      <h2>Consistency heatmap</h2>
+      <div id="trainingHeatmap" class="heatmap"></div>
+      <p class="small">Each square is a day. Darker/brighter means more distance. No route or location data is exposed.</p>
+    </section>
+
+    <section class="panel wide-panel">
+      <h2>Privacy note</h2>
+      <p id="privacyNote" class="small"></p>
+    </section>
+
     <section class="grid">
       <div class="panel"><h2>Weekly distance</h2><canvas id="weeklyDistance"></canvas></div>
       <div class="panel"><h2>CTL / ATL / TSB</h2><canvas id="pmc"></canvas></div>
@@ -41,18 +89,18 @@
     </section>
 
     <section class="panel wide-panel">
-      <h2>HR drift / aerobic decoupling</h2>
+      <h2>Steady-run fade</h2>
       <canvas id="driftChart"></canvas>
       <p id="driftNote" class="small"></p>
     </section>
 
     <section class="panel wide-panel">
-      <h2>Matched runs</h2>
+      <h2>GPS matched runs: efficiency</h2>
       <div class="table-wrap">
         <table id="matchedRunsTable">
           <thead>
             <tr>
-              <th>Group</th><th>Count</th><th>Latest</th><th>Typical km</th><th>Typical elev.</th><th>Latest pace</th><th>Best pace</th><th>vs previous</th><th>Latest HR</th>
+              <th>Group</th><th>Count</th><th>Latest</th><th>Typical km</th><th>Typical elev.</th><th>Latest pace</th><th>Latest HR</th><th>Efficiency</th><th>Eff. vs previous</th><th>Fitness signal</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -82,5 +130,6 @@
   </footer>
 
   <script src="app.js"></script>
+  <script src="insights.js"></script>
 </body>
 </html>
