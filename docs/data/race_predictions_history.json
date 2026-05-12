@@ -1,28 +1,34 @@
 {
-  "generated_at_utc": "2026-05-12T10:07:18.922415+00:00",
+  "generated_at_utc": "2026-05-12T10:15:07.924291+00:00",
   "method": "Daily snapshots of derived race-fitness estimates and readiness verdicts. Public-safe; no GPS or activity IDs.",
   "items": [
     {
       "date": "2026-05-12",
       "race": "10K",
-      "fast_time_sec": 2685.0,
-      "slow_time_sec": 2826.0,
+      "fast_time_sec": 2546.0,
+      "slow_time_sec": 2750.0,
+      "fast_time": "42:26",
+      "slow_time": "45:50",
       "readiness": "ready",
       "confidence": "medium-high"
     },
     {
       "date": "2026-05-12",
       "race": "5K",
-      "fast_time_sec": 1272.0,
-      "slow_time_sec": 1342.0,
+      "fast_time_sec": 1221.0,
+      "slow_time_sec": 1319.0,
+      "fast_time": "20:21",
+      "slow_time": "21:59",
       "readiness": "ready",
       "confidence": "medium-high"
     },
     {
       "date": "2026-05-12",
       "race": "Half marathon",
-      "fast_time_sec": 6141.0,
-      "slow_time_sec": 6499.0,
+      "fast_time_sec": 5618.0,
+      "slow_time_sec": 6067.0,
+      "fast_time": "1:33:38",
+      "slow_time": "1:41:07",
       "readiness": "ready",
       "confidence": "medium"
     },
@@ -31,6 +37,8 @@
       "race": "Marathon",
       "fast_time_sec": 13474.0,
       "slow_time_sec": 14786.0,
+      "fast_time": "3:44:34",
+      "slow_time": "4:06:26",
       "readiness": "plausible but durability-limited",
       "confidence": "low"
     }
