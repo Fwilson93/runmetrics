@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-12T14:08:05.721680+00:00",
+  "generated_at_utc": "2026-05-12T14:14:55.739557+00:00",
   "privacy": {
     "public_site_policy": "Public outputs intentionally avoid GPS coordinates, polylines, maps, activity IDs, activity names, route names, start/end coordinates, and exact route fingerprints. Matched runs use rounded distance/elevation only.",
     "home_address_risk_control": "No public field should be sufficient to reconstruct home location or habitual start/end points."
@@ -828,7 +828,7 @@
     }
   ],
   "run_type_summary": {
-    "generated_at_utc": "2026-05-12T14:08:05.235551+00:00",
+    "generated_at_utc": "2026-05-12T14:14:54.910056+00:00",
     "method": "Public-safe deterministic run classification from distance, duration, elevation, HR relative to threshold proxy, and sport type. No activity IDs, names, routes or GPS are exported.",
     "items": [
       {
@@ -1192,7 +1192,7 @@
     ]
   },
   "easy_run_efficiency": {
-    "generated_at_utc": "2026-05-12T14:08:05.236040+00:00",
+    "generated_at_utc": "2026-05-12T14:14:54.910833+00:00",
     "method": "Easy/steady efficiency = speed_kmh divided by average HR for non-hilly recovery/easy/steady runs. Higher means more speed per heartbeat.",
     "verdict": "not enough data",
     "recent_vs_previous_efficiency_pct": null,
@@ -1256,7 +1256,7 @@
     ]
   },
   "matched_route_verdicts": {
-    "generated_at_utc": "2026-05-12T14:08:05.236095+00:00",
+    "generated_at_utc": "2026-05-12T14:14:54.910922+00:00",
     "method": "Matched-route verdicts are efficiency-led: faster alone is not enough; the question is whether speed per heartbeat improved.",
     "best_signal": {
       "label": "GPS matched route 1",
@@ -1348,7 +1348,7 @@
     "plain_english": "This checks whether you get less speed for the same heartbeat in the second half of steady runs. Closer to 0% is better; strongly negative means you faded."
   },
   "block_review": {
-    "generated_at_utc": "2026-05-12T14:08:05.236429+00:00",
+    "generated_at_utc": "2026-05-12T14:14:54.911541+00:00",
     "items": [
       {
         "label": "Last 4 weeks",
@@ -1386,7 +1386,7 @@
     ]
   },
   "fun_stats_v2": {
-    "generated_at_utc": "2026-05-12T14:08:05.236489+00:00",
+    "generated_at_utc": "2026-05-12T14:14:54.911656+00:00",
     "items": [
       {
         "label": "Longest public-window day",
@@ -1413,7 +1413,7 @@
     ]
   },
   "training_priorities": {
-    "generated_at_utc": "2026-05-12T14:08:05.389247+00:00",
+    "generated_at_utc": "2026-05-12T14:14:55.173205+00:00",
     "method": "Rule-based priorities from public-safe load, run-type, efficiency, matched-route and steady-run fade summaries.",
     "items": [
       {
@@ -1426,7 +1426,7 @@
     ]
   },
   "race_predictions": {
-    "generated_at_utc": "2026-05-12T14:08:05.388863+00:00",
+    "generated_at_utc": "2026-05-12T14:14:55.172877+00:00",
     "date": "2026-05-12",
     "method": "Transparent heuristic. Race order is 5K, 10K, 1/2M, marathon, 50K, 100K. Fitness estimates blend threshold pace proxy with observed activity equivalents. Trend compares current performance with activity-derived equivalents from roughly three months ago. Readiness is separately gated by longest recent run and 28-day volume.",
     "threshold_anchor": {
@@ -1992,17 +1992,17 @@
       }
     ],
     "anchoring": {
-      "generated_at_utc": "2026-05-12T14:08:05Z",
+      "generated_at_utc": "2026-05-12T14:14:55Z",
       "source": "docs/data/best_efforts.json",
       "rule": "Displayed anchored prediction is min(model prediction, observed rolling best effort) for matching distance.",
       "anchored_count": 0
     },
     "trend_method": "Trend compares the midpoint of today's estimated range with the previous stored snapshot for the same race. Negative time change means faster/improving.",
     "training_focus_method": "Training focus is rule-based from readiness, long-run exposure, 28-day volume, fade, run-type balance and easy-efficiency trend.",
-    "enhanced_at_utc": "2026-05-12T14:08:05.718710+00:00"
+    "enhanced_at_utc": "2026-05-12T14:14:55.737175+00:00"
   },
   "race_predictions_history": {
-    "generated_at_utc": "2026-05-12T14:08:05.389694+00:00",
+    "generated_at_utc": "2026-05-12T14:14:55.173795+00:00",
     "method": "Daily snapshots of derived race-fitness estimates and readiness verdicts. Public-safe; no GPS or activity IDs.",
     "items": [
       {
