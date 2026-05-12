@@ -1,106 +1,113 @@
-(function(){
-  const BASE = window.location.origin + window.location.pathname.replace(/\/$/, "");
-  const DATA = BASE + "/data";
+const fmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 });
+const fmt2 = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 2 });
 
-  function byId(id){ return document.getElementById(id); }
-  function fmt(x, dp=1){
-    if(x===null||x===undefined||Number.isNaN(Number(x))) return "–";
-    return Number(x).toFixed(dp);
-  }
-  function fetchJSON(p){
-    return fetch(p, {cache:"no-store"}).then(r=>{
-      if(!r.ok) throw new Error(r.status+" "+r.statusText+" :: "+p);
-      return r.json();
-    });
-  }
-  function sliceLast(arr,n){ return (arr && arr.length>n) ? arr.slice(arr.length-n) : (arr||[]); }
+async function loadJson(path) {
+  const res = await fetch(path, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Failed to load ${path}: ${res.status}`);
+  return await res.json();
+}
 
-  function plotLoad(series, generated_at){
-    const el = byId("load_plot");
-    const meta = byId("load_meta");
-    const s = sliceLast(series, 120);
-    const x = s.map(p=>p.date);
-    const ctl = s.map(p=>p.ctl);
-    const atl = s.map(p=>p.atl);
-    const tsb = s.map(p=>p.tsb);
+function pace(v) {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return '—';
+  const mins = Math.floor(Number(v));
+  const secs = Math.round((Number(v) - mins) * 60);
+  return `${mins}:${String(secs).padStart(2, '0')}/km`;
+}
 
-    Plotly.newPlot(el, [
-      {x,y:ctl,type:"scatter",mode:"lines",name:"CTL",line:{color:"#6aa9ff",width:3}},
-      {x,y:atl,type:"scatter",mode:"lines",name:"ATL",line:{color:"#ff6b6b",width:3}},
-      {x,y:tsb,type:"scatter",mode:"lines",name:"TSB",line:{color:"#3ddc97",width:3}},
-    ], {
-      paper_bgcolor:"#0f1117",plot_bgcolor:"#0f1117",font:{color:"#e9eef6"},
-      xaxis:{gridcolor:"#1f2430"},yaxis:{gridcolor:"#1f2430",title:"load"},
-      margin:{t:20,l:55,r:10,b:45},legend:{orientation:"h"}
-    }, {displayModeBar:false,responsive:true});
+function card(label, value, unit = '') {
+  return `<div class="card"><div class="label">${label}</div><div class="value">${value ?? '—'}</div><div class="unit">${unit}</div></div>`;
+}
 
-    if(meta && s.length){
-      const last = s[s.length-1];
-      meta.textContent = "Last update: " + (generated_at||"").slice(0,19).replace("T"," ") +
-        " UTC · CTL " + fmt(last.ctl,1) + " · ATL " + fmt(last.atl,1) + " · TSB " + fmt(last.tsb,1);
+function makeLineChart(id, labels, datasets, yTitle = '') {
+  const ctx = document.getElementById(id);
+  return new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { labels: { color: '#e8eefc' } } },
+      scales: {
+        x: { ticks: { color: '#99a7c7', maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.06)' } },
+        y: { title: { display: Boolean(yTitle), text: yTitle, color: '#99a7c7' }, ticks: { color: '#99a7c7' }, grid: { color: 'rgba(255,255,255,0.06)' } }
+      }
     }
-  }
+  });
+}
 
-  function renderInsights(j){
-    const el = byId("insights");
-    if(!el || !j || j.status!=="ok") return;
-    const acwr = (j.acwr===null||j.acwr===undefined) ? "–" : Number(j.acwr).toFixed(2);
-    const notes = (j.lower_leg_risk_notes||[]).map(x=>"<li>"+x+"</li>").join("");
-    el.innerHTML =
-      "<strong>Trend:</strong> "+j.trend+
-      " · <strong>Freshness:</strong> "+j.freshness+
-      " · <strong>ACWR:</strong> "+acwr+
-      " · <strong>Lower‑leg risk:</strong> "+j.lower_leg_risk_level+
-      "<br><span class='muted'>"+j.note+"</span>" +
-      (notes?("<ul class='muted' style='margin:6px 0 0 18px'>"+notes+"</ul>"):"");
-  }
+function makeBarChart(id, labels, datasets, yTitle = '') {
+  const ctx = document.getElementById(id);
+  return new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#e8eefc' } } },
+      scales: {
+        x: { ticks: { color: '#99a7c7', maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.06)' } },
+        y: { title: { display: Boolean(yTitle), text: yTitle, color: '#99a7c7' }, ticks: { color: '#99a7c7' }, grid: { color: 'rgba(255,255,255,0.06)' } }
+      }
+    }
+  });
+}
 
-  function plotWeekly(weeks){
-    const el = byId("weekly_plot");
-    if(!el || !weeks || !weeks.length) return;
-    const x = weeks.map(w=>w.week_start);
-    const y = weeks.map(w=>w.distance_km);
-    Plotly.newPlot(el, [
-      {x,y,type:"bar",name:"Distance (km)",marker:{color:"#3ddc97"}}
-    ], {
-      paper_bgcolor:"#0f1117",plot_bgcolor:"#0f1117",font:{color:"#e9eef6"},
-      xaxis:{gridcolor:"#1f2430",title:"week start"},yaxis:{gridcolor:"#1f2430",title:"km"},
-      margin:{t:20,l:55,r:10,b:60},showlegend:false
-    }, {displayModeBar:false,responsive:true});
-  }
+async function main() {
+  const [summary, daily, weekly, recent] = await Promise.all([
+    loadJson('./data/summary.json'),
+    loadJson('./data/daily_metrics.json'),
+    loadJson('./data/weekly_metrics.json'),
+    loadJson('./data/activities_recent.json')
+  ]);
 
-  function renderRecent(items){
-    const el = byId("recent_list");
-    if(!el) return;
-    if(!items || !items.length){ el.textContent="No recent activities."; return; }
-    el.innerHTML = items.slice(0,25).map(a=>{
-      const d = (a.date||"").slice(0,10);
-      const hr = (a.avg_hr===null||a.avg_hr===undefined) ? "–" : Math.round(a.avg_hr)+" bpm";
-      const dist = (a.distance_km===null||a.distance_km===undefined) ? "–" : fmt(a.distance_km,1)+" km";
-      const pace = (a.pace_min_per_km===null||a.pace_min_per_km===undefined) ? "–" : fmt(a.pace_min_per_km,2)+" min/km";
-      return "<div style='margin-bottom:6px'><strong>"+d+"</strong> — "+(a.name||"Activity")+
-        " <span class='muted'>("+dist+", "+pace+", HR "+hr+")</span></div>";
-    }).join("");
-  }
+  document.getElementById('generated').textContent = `Updated ${new Date(summary.generated_at_utc).toLocaleString('en-GB')}`;
+  document.getElementById('cards').innerHTML = [
+    card('Last 7 days', fmt.format(summary.last_7d_distance_km), 'km'),
+    card('Last 28 days', fmt.format(summary.last_28d_distance_km), 'km'),
+    card('CTL', fmt.format(summary.ctl), 'fitness'),
+    card('ATL', fmt.format(summary.atl), 'fatigue'),
+    card('TSB', fmt.format(summary.tsb), 'form'),
+    card('ACWR', fmt2.format(summary.acwr), '7d / 28d load'),
+    card('Observed HRmax', fmt.format(summary.observed_hrmax), 'bpm'),
+    card('Activities', summary.activity_count, `${summary.date_min} → ${summary.date_max}`),
+  ].join('');
 
-  function boot(){
-    fetchJSON(DATA + "/load_365.json").then(j=>{
-      if(j && j.series) plotLoad(j.series, j.generated_at);
-    }).catch(console.error);
+  const advice = document.getElementById('advice');
+  advice.innerHTML = summary.advice.map(x => `<li>${x}</li>`).join('');
 
-    fetchJSON(DATA + "/insights.json").then(j=>{
-      renderInsights(j);
-    }).catch(console.error);
+  makeBarChart('weeklyDistance', weekly.map(d => d.date), [
+    { label: 'Weekly km', data: weekly.map(d => d.distance_km), backgroundColor: 'rgba(103,232,249,0.55)' },
+    { label: '4-week average', data: weekly.map(d => d.distance_4w_avg), type: 'line', borderColor: '#7ee787', backgroundColor: 'transparent', tension: 0.25 }
+  ], 'km');
 
-    fetchJSON(DATA + "/weekly.json").then(j=>{
-      if(j && j.weeks) plotWeekly(j.weeks);
-    }).catch(console.error);
+  makeLineChart('pmc', daily.map(d => d.date), [
+    { label: 'CTL / fitness', data: daily.map(d => d.ctl), borderColor: '#67e8f9', backgroundColor: 'transparent', tension: 0.2 },
+    { label: 'ATL / fatigue', data: daily.map(d => d.atl), borderColor: '#ff7b72', backgroundColor: 'transparent', tension: 0.2 },
+    { label: 'TSB / form', data: daily.map(d => d.tsb), borderColor: '#7ee787', backgroundColor: 'transparent', tension: 0.2 },
+  ], 'load units');
 
-    fetchJSON(DATA + "/recent.json").then(j=>{
-      renderRecent(j.items||[]);
-    }).catch(console.error);
-  }
+  makeBarChart('dailyLoad', daily.map(d => d.date), [
+    { label: 'Daily load', data: daily.map(d => d.load_trimp), backgroundColor: 'rgba(255,209,102,0.45)' },
+    { label: '7-day load', data: daily.map(d => d.load_7d), type: 'line', borderColor: '#67e8f9', backgroundColor: 'transparent', tension: 0.2 }
+  ], 'TRIMP-derived load');
 
-  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
-  else boot();
-})();
+  makeLineChart('paceTrend', daily.map(d => d.date), [
+    { label: 'Mean pace, active days', data: daily.map(d => d.pace_min_per_km), borderColor: '#c084fc', backgroundColor: 'transparent', tension: 0.2 }
+  ], 'min/km');
+
+  const tbody = document.querySelector('#recentTable tbody');
+  tbody.innerHTML = recent.map(r => `
+    <tr>
+      <td>${r.date}</td>
+      <td>${r.sport_type}</td>
+      <td>${fmt.format(r.distance_km)}</td>
+      <td>${fmt.format(r.moving_time_min)}</td>
+      <td>${pace(r.pace_min_per_km)}</td>
+      <td>${fmt.format(r.elev_gain_m)}</td>
+      <td>${r.avg_hr === null ? '—' : fmt.format(r.avg_hr)}</td>
+      <td>${fmt.format(r.load_trimp)}</td>
+    </tr>`).join('');
+}
+
+main().catch(err => {
+  document.body.innerHTML = `<main class="panel"><h1>RunMetrics failed to load</h1><pre>${err.stack || err}</pre></main>`;
+});

@@ -1,0 +1,27 @@
+{
+  "generated_at_utc": "2026-05-12T08:07:43.499669+00:00",
+  "cache_file": "data/strava/activities_raw.json",
+  "public_data_policy": "Summary metrics only. No raw Strava payloads, GPS, polylines, activity names, upload IDs, external IDs, or tokens are exported.",
+  "activity_count": 44,
+  "date_min": "2026-01-15",
+  "date_max": "2026-05-12",
+  "total_distance_km": 401.7,
+  "last_7d_distance_km": 10.1,
+  "last_28d_distance_km": 74.3,
+  "last_7d_activity_days": 1,
+  "current_week_distance_km": 10.1,
+  "distance_ramp_vs_prev_4w": 0.63,
+  "ctl": 28.9,
+  "atl": 28.0,
+  "tsb": 0.9,
+  "acwr": 0.6,
+  "observed_hrmax": 192.0,
+  "median_pace_min_per_km": 4.79,
+  "median_avg_hr": 156.1,
+  "advice": [
+    "TSB is neutral or positive: you are relatively fresh for quality work if the legs feel good.",
+    "ACWR is low at 0.60: rebuild gradually rather than jumping into a big week.",
+    "This week's distance is below baseline (0.63×), which may be useful recovery.",
+    "Only 0–1 running days in the last week: consistency is the next target if injury-free."
+  ]
+}
