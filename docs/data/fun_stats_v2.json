@@ -1,0 +1,27 @@
+{
+  "generated_at_utc": "2026-05-12T09:25:38.264640+00:00",
+  "items": [
+    {
+      "label": "Longest public-window day",
+      "value": "21.6 km"
+    },
+    {
+      "label": "Biggest public-window week",
+      "value": "38.5 km"
+    },
+    {
+      "label": "Best matched-route efficiency signal",
+      "value": "10.9%",
+      "context": "GPS matched route 1"
+    },
+    {
+      "label": "Best easy/steady efficiency",
+      "value": 0.0892,
+      "context": "2026-04-23"
+    },
+    {
+      "label": "Hard-ish runs in latest 28 classified runs",
+      "value": 9
+    }
+  ]
+}

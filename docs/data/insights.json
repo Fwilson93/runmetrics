@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-12T09:15:45.721828+00:00",
+  "generated_at_utc": "2026-05-12T09:25:38.266562+00:00",
   "privacy": {
     "public_site_policy": "Public outputs intentionally avoid GPS coordinates, polylines, maps, activity IDs, activity names, route names, start/end coordinates, and exact route fingerprints. Matched runs use rounded distance/elevation only.",
     "home_address_risk_control": "No public field should be sufficient to reconstruct home location or habitual start/end points."
@@ -826,5 +826,590 @@
       "load": 101.0,
       "bucket": 3
     }
-  ]
+  ],
+  "run_type_summary": {
+    "generated_at_utc": "2026-05-12T09:25:38.263639+00:00",
+    "method": "Public-safe deterministic run classification from distance, duration, elevation, HR relative to threshold proxy, and sport type. No activity IDs, names, routes or GPS are exported.",
+    "items": [
+      {
+        "type": "threshold-ish",
+        "count": 8,
+        "pct": 40.0
+      },
+      {
+        "type": "steady",
+        "count": 6,
+        "pct": 30.0
+      },
+      {
+        "type": "long",
+        "count": 4,
+        "pct": 20.0
+      },
+      {
+        "type": "easy",
+        "count": 1,
+        "pct": 5.0
+      },
+      {
+        "type": "hard / race-like",
+        "count": 1,
+        "pct": 5.0
+      }
+    ],
+    "recent_28_run_items": [
+      {
+        "type": "threshold-ish",
+        "count": 8,
+        "pct": 40.0
+      },
+      {
+        "type": "steady",
+        "count": 6,
+        "pct": 30.0
+      },
+      {
+        "type": "long",
+        "count": 4,
+        "pct": 20.0
+      },
+      {
+        "type": "easy",
+        "count": 1,
+        "pct": 5.0
+      },
+      {
+        "type": "hard / race-like",
+        "count": 1,
+        "pct": 5.0
+      }
+    ],
+    "recent_28_hard_count": 9,
+    "recent_28_easy_or_long_count": 5,
+    "classified_runs": [
+      {
+        "date": "2026-05-12",
+        "type": "threshold-ish",
+        "labels": [
+          "threshold-ish"
+        ],
+        "distance_km": 10.14,
+        "duration_min": 44.9,
+        "elev_gain_m": 148.0,
+        "elev_per_km": 14.6,
+        "avg_hr": 160.9,
+        "hr_ratio_to_threshold": 0.951,
+        "pace_min_per_km": 4.43,
+        "efficiency_kmh_per_bpm": 0.0842
+      },
+      {
+        "date": "2026-05-05",
+        "type": "steady",
+        "labels": [
+          "steady"
+        ],
+        "distance_km": 10.18,
+        "duration_min": 46.4,
+        "elev_gain_m": 148.0,
+        "elev_per_km": 14.5,
+        "avg_hr": 150.2,
+        "hr_ratio_to_threshold": 0.888,
+        "pace_min_per_km": 4.55,
+        "efficiency_kmh_per_bpm": 0.0877
+      },
+      {
+        "date": "2026-05-02",
+        "type": "threshold-ish",
+        "labels": [
+          "threshold-ish",
+          "trail"
+        ],
+        "distance_km": 14.73,
+        "duration_min": 70.7,
+        "elev_gain_m": 242.0,
+        "elev_per_km": 16.4,
+        "avg_hr": 156.2,
+        "hr_ratio_to_threshold": 0.923,
+        "pace_min_per_km": 4.8,
+        "efficiency_kmh_per_bpm": 0.08
+      },
+      {
+        "date": "2026-04-30",
+        "type": "threshold-ish",
+        "labels": [
+          "threshold-ish"
+        ],
+        "distance_km": 10.47,
+        "duration_min": 47.3,
+        "elev_gain_m": 148.0,
+        "elev_per_km": 14.1,
+        "avg_hr": 155.9,
+        "hr_ratio_to_threshold": 0.921,
+        "pace_min_per_km": 4.52,
+        "efficiency_kmh_per_bpm": 0.0851
+      },
+      {
+        "date": "2026-04-28",
+        "type": "steady",
+        "labels": [
+          "steady"
+        ],
+        "distance_km": 9.3,
+        "duration_min": 42.4,
+        "elev_gain_m": 127.0,
+        "elev_per_km": 13.7,
+        "avg_hr": 155.2,
+        "hr_ratio_to_threshold": 0.917,
+        "pace_min_per_km": 4.56,
+        "efficiency_kmh_per_bpm": 0.0848
+      },
+      {
+        "date": "2026-04-25",
+        "type": "threshold-ish",
+        "labels": [
+          "threshold-ish",
+          "trail"
+        ],
+        "distance_km": 9.34,
+        "duration_min": 44.8,
+        "elev_gain_m": 179.0,
+        "elev_per_km": 19.1,
+        "avg_hr": 158.8,
+        "hr_ratio_to_threshold": 0.939,
+        "pace_min_per_km": 4.8,
+        "efficiency_kmh_per_bpm": 0.0788
+      },
+      {
+        "date": "2026-04-23",
+        "type": "steady",
+        "labels": [
+          "steady"
+        ],
+        "distance_km": 5.41,
+        "duration_min": 24.3,
+        "elev_gain_m": 79.0,
+        "elev_per_km": 14.6,
+        "avg_hr": 150.0,
+        "hr_ratio_to_threshold": 0.887,
+        "pace_min_per_km": 4.48,
+        "efficiency_kmh_per_bpm": 0.0892
+      },
+      {
+        "date": "2026-04-16",
+        "type": "steady",
+        "labels": [
+          "steady"
+        ],
+        "distance_km": 4.69,
+        "duration_min": 22.4,
+        "elev_gain_m": 64.0,
+        "elev_per_km": 13.6,
+        "avg_hr": 145.5,
+        "hr_ratio_to_threshold": 0.86,
+        "pace_min_per_km": 4.78,
+        "efficiency_kmh_per_bpm": 0.0863
+      },
+      {
+        "date": "2026-04-11",
+        "type": "long",
+        "labels": [
+          "long"
+        ],
+        "distance_km": 21.21,
+        "duration_min": 94.2,
+        "elev_gain_m": 40.0,
+        "elev_per_km": 1.9,
+        "avg_hr": 166.3,
+        "hr_ratio_to_threshold": 0.983,
+        "pace_min_per_km": 4.44,
+        "efficiency_kmh_per_bpm": 0.0813
+      },
+      {
+        "date": "2026-04-06",
+        "type": "hard / race-like",
+        "labels": [
+          "hard / race-like"
+        ],
+        "distance_km": 6.01,
+        "duration_min": 25.1,
+        "elev_gain_m": 14.0,
+        "elev_per_km": 2.4,
+        "avg_hr": 166.2,
+        "hr_ratio_to_threshold": 0.982,
+        "pace_min_per_km": 4.17,
+        "efficiency_kmh_per_bpm": 0.0865
+      },
+      {
+        "date": "2026-04-02",
+        "type": "threshold-ish",
+        "labels": [
+          "threshold-ish"
+        ],
+        "distance_km": 12.13,
+        "duration_min": 58.0,
+        "elev_gain_m": 206.0,
+        "elev_per_km": 17.0,
+        "avg_hr": 155.9,
+        "hr_ratio_to_threshold": 0.921,
+        "pace_min_per_km": 4.78,
+        "efficiency_kmh_per_bpm": 0.0805
+      },
+      {
+        "date": "2026-03-31",
+        "type": "steady",
+        "labels": [
+          "steady"
+        ],
+        "distance_km": 8.14,
+        "duration_min": 40.3,
+        "elev_gain_m": 113.0,
+        "elev_per_km": 13.9,
+        "avg_hr": 145.8,
+        "hr_ratio_to_threshold": 0.862,
+        "pace_min_per_km": 4.96,
+        "efficiency_kmh_per_bpm": 0.083
+      },
+      {
+        "date": "2026-03-29",
+        "type": "easy",
+        "labels": [
+          "easy"
+        ],
+        "distance_km": 8.71,
+        "duration_min": 55.6,
+        "elev_gain_m": 301.0,
+        "elev_per_km": 34.5,
+        "avg_hr": 141.9,
+        "hr_ratio_to_threshold": 0.839,
+        "pace_min_per_km": 6.38,
+        "efficiency_kmh_per_bpm": 0.0663
+      },
+      {
+        "date": "2026-03-26",
+        "type": "long",
+        "labels": [
+          "long"
+        ],
+        "distance_km": 16.5,
+        "duration_min": 73.7,
+        "elev_gain_m": 68.0,
+        "elev_per_km": 4.1,
+        "avg_hr": 166.9,
+        "hr_ratio_to_threshold": 0.986,
+        "pace_min_per_km": 4.46,
+        "efficiency_kmh_per_bpm": 0.0805
+      },
+      {
+        "date": "2026-03-24",
+        "type": "threshold-ish",
+        "labels": [
+          "threshold-ish"
+        ],
+        "distance_km": 9.05,
+        "duration_min": 41.8,
+        "elev_gain_m": 122.0,
+        "elev_per_km": 13.5,
+        "avg_hr": 158.1,
+        "hr_ratio_to_threshold": 0.934,
+        "pace_min_per_km": 4.62,
+        "efficiency_kmh_per_bpm": 0.0822
+      },
+      {
+        "date": "2026-03-19",
+        "type": "long",
+        "labels": [
+          "long"
+        ],
+        "distance_km": 20.29,
+        "duration_min": 100.7,
+        "elev_gain_m": 315.0,
+        "elev_per_km": 15.5,
+        "avg_hr": 150.1,
+        "hr_ratio_to_threshold": 0.887,
+        "pace_min_per_km": 4.96,
+        "efficiency_kmh_per_bpm": 0.0806
+      },
+      {
+        "date": "2026-03-17",
+        "type": "steady",
+        "labels": [
+          "steady"
+        ],
+        "distance_km": 9.09,
+        "duration_min": 44.5,
+        "elev_gain_m": 126.0,
+        "elev_per_km": 13.9,
+        "avg_hr": 155.0,
+        "hr_ratio_to_threshold": 0.916,
+        "pace_min_per_km": 4.9,
+        "efficiency_kmh_per_bpm": 0.0791
+      },
+      {
+        "date": "2026-03-15",
+        "type": "threshold-ish",
+        "labels": [
+          "threshold-ish"
+        ],
+        "distance_km": 8.19,
+        "duration_min": 37.9,
+        "elev_gain_m": 77.0,
+        "elev_per_km": 9.4,
+        "avg_hr": 160.1,
+        "hr_ratio_to_threshold": 0.946,
+        "pace_min_per_km": 4.63,
+        "efficiency_kmh_per_bpm": 0.0809
+      },
+      {
+        "date": "2026-03-12",
+        "type": "long",
+        "labels": [
+          "long"
+        ],
+        "distance_km": 21.56,
+        "duration_min": 107.8,
+        "elev_gain_m": 372.0,
+        "elev_per_km": 17.3,
+        "avg_hr": 155.7,
+        "hr_ratio_to_threshold": 0.92,
+        "pace_min_per_km": 5.0,
+        "efficiency_kmh_per_bpm": 0.0771
+      },
+      {
+        "date": "2026-03-10",
+        "type": "threshold-ish",
+        "labels": [
+          "threshold-ish"
+        ],
+        "distance_km": 8.73,
+        "duration_min": 41.1,
+        "elev_gain_m": 118.0,
+        "elev_per_km": 13.6,
+        "avg_hr": 158.1,
+        "hr_ratio_to_threshold": 0.934,
+        "pace_min_per_km": 4.71,
+        "efficiency_kmh_per_bpm": 0.0806
+      }
+    ]
+  },
+  "easy_run_efficiency": {
+    "generated_at_utc": "2026-05-12T09:25:38.264152+00:00",
+    "method": "Easy/steady efficiency = speed_kmh divided by average HR for non-hilly recovery/easy/steady runs. Higher means more speed per heartbeat.",
+    "verdict": "not enough data",
+    "recent_vs_previous_efficiency_pct": null,
+    "items": [
+      {
+        "date": "2026-05-05",
+        "efficiency_kmh_per_bpm": 0.0877,
+        "rolling_efficiency_kmh_per_bpm": 0.0877,
+        "rolling_pace_min_per_km": 4.55,
+        "rolling_avg_hr": 150.2,
+        "type": "steady"
+      },
+      {
+        "date": "2026-04-28",
+        "efficiency_kmh_per_bpm": 0.0848,
+        "rolling_efficiency_kmh_per_bpm": 0.0862,
+        "rolling_pace_min_per_km": 4.55,
+        "rolling_avg_hr": 152.7,
+        "type": "steady"
+      },
+      {
+        "date": "2026-04-23",
+        "efficiency_kmh_per_bpm": 0.0892,
+        "rolling_efficiency_kmh_per_bpm": 0.0872,
+        "rolling_pace_min_per_km": 4.53,
+        "rolling_avg_hr": 151.8,
+        "type": "steady"
+      },
+      {
+        "date": "2026-04-16",
+        "efficiency_kmh_per_bpm": 0.0863,
+        "rolling_efficiency_kmh_per_bpm": 0.087,
+        "rolling_pace_min_per_km": 4.59,
+        "rolling_avg_hr": 150.2,
+        "type": "steady"
+      },
+      {
+        "date": "2026-03-31",
+        "efficiency_kmh_per_bpm": 0.083,
+        "rolling_efficiency_kmh_per_bpm": 0.0862,
+        "rolling_pace_min_per_km": 4.67,
+        "rolling_avg_hr": 149.3,
+        "type": "steady"
+      },
+      {
+        "date": "2026-03-29",
+        "efficiency_kmh_per_bpm": 0.0663,
+        "rolling_efficiency_kmh_per_bpm": 0.0829,
+        "rolling_pace_min_per_km": 4.95,
+        "rolling_avg_hr": 148.1,
+        "type": "easy"
+      },
+      {
+        "date": "2026-03-17",
+        "efficiency_kmh_per_bpm": 0.0791,
+        "rolling_efficiency_kmh_per_bpm": 0.0814,
+        "rolling_pace_min_per_km": 5.01,
+        "rolling_avg_hr": 148.9,
+        "type": "steady"
+      }
+    ]
+  },
+  "matched_route_verdicts": {
+    "generated_at_utc": "2026-05-12T09:25:38.264212+00:00",
+    "method": "Matched-route verdicts are efficiency-led: faster alone is not enough; the question is whether speed per heartbeat improved.",
+    "best_signal": {
+      "label": "GPS matched route 1",
+      "count": 2,
+      "latest_date": "2026-02-17",
+      "efficiency_change_pct": 10.9,
+      "pace_change_pct": -12.4,
+      "hr_change_pct": 2.9,
+      "verdict": "probably fitter",
+      "why": "More speed per heartbeat than your previous median on this GPS-matched route."
+    },
+    "items": [
+      {
+        "label": "GPS matched route 5",
+        "count": 6,
+        "latest_date": "2026-04-28",
+        "efficiency_change_pct": 3.2,
+        "pace_change_pct": -6.9,
+        "hr_change_pct": 0.1,
+        "verdict": "probably fitter",
+        "why": "More speed per heartbeat than your previous median on this GPS-matched route."
+      },
+      {
+        "label": "GPS matched route 7",
+        "count": 3,
+        "latest_date": "2026-05-12",
+        "efficiency_change_pct": -2.5,
+        "pace_change_pct": -2.4,
+        "hr_change_pct": 5.1,
+        "verdict": "similar fitness signal",
+        "why": "Efficiency is close to your previous median."
+      },
+      {
+        "label": "GPS matched route 3",
+        "count": 3,
+        "latest_date": "2026-04-16",
+        "efficiency_change_pct": 8.8,
+        "pace_change_pct": -1.4,
+        "hr_change_pct": -6.9,
+        "verdict": "probably fitter",
+        "why": "More speed per heartbeat than your previous median on this GPS-matched route."
+      },
+      {
+        "label": "GPS matched route 6",
+        "count": 2,
+        "latest_date": "2026-03-10",
+        "efficiency_change_pct": -0.7,
+        "pace_change_pct": -4.7,
+        "hr_change_pct": 5.7,
+        "verdict": "similar fitness signal",
+        "why": "Efficiency is close to your previous median."
+      },
+      {
+        "label": "GPS matched route 2",
+        "count": 2,
+        "latest_date": "2026-03-03",
+        "efficiency_change_pct": -6.0,
+        "pace_change_pct": -2.5,
+        "hr_change_pct": 9.1,
+        "verdict": "probably less efficient",
+        "why": "Less speed per heartbeat than your previous median on this GPS-matched route."
+      },
+      {
+        "label": "GPS matched route 1",
+        "count": 2,
+        "latest_date": "2026-02-17",
+        "efficiency_change_pct": 10.9,
+        "pace_change_pct": -12.4,
+        "hr_change_pct": 2.9,
+        "verdict": "probably fitter",
+        "why": "More speed per heartbeat than your previous median on this GPS-matched route."
+      },
+      {
+        "label": "GPS matched route 4",
+        "count": 2,
+        "latest_date": "2026-02-06",
+        "efficiency_change_pct": 2.5,
+        "pace_change_pct": -4.8,
+        "hr_change_pct": 2.5,
+        "verdict": "similar fitness signal",
+        "why": "Efficiency is close to your previous median."
+      }
+    ]
+  },
+  "steady_fade_verdict": {
+    "label": "mild fade",
+    "recent_mean_efficiency_change_pct": -3.4,
+    "message": "Recent steady runs show mild fade. This is common, but worth watching.",
+    "plain_english": "This checks whether you get less speed for the same heartbeat in the second half of steady runs. Closer to 0% is better; strongly negative means you faded."
+  },
+  "block_review": {
+    "generated_at_utc": "2026-05-12T09:25:38.264548+00:00",
+    "items": [
+      {
+        "label": "Last 4 weeks",
+        "days": 28,
+        "distance_km": 74.3,
+        "km_per_week": 18.6,
+        "load": 675.0,
+        "elev_gain_m": 1135.0,
+        "active_days": 8,
+        "distance_vs_previous_block_pct": -27.2,
+        "narrative": "volume is down sharply; threshold proxy is 169.2 bpm; steady-run fade is mild fade; best matched-route signal is 10.9%."
+      },
+      {
+        "label": "Last 8 weeks",
+        "days": 56,
+        "distance_km": 176.3,
+        "km_per_week": 22.0,
+        "load": 1687.0,
+        "elev_gain_m": 2314.0,
+        "active_days": 16,
+        "distance_vs_previous_block_pct": -15.7,
+        "narrative": "volume is broadly stable; threshold proxy is 169.2 bpm; steady-run fade is mild fade; best matched-route signal is 10.9%."
+      },
+      {
+        "label": "Last 12 weeks",
+        "days": 84,
+        "distance_km": 307.6,
+        "km_per_week": 25.6,
+        "load": 2962.0,
+        "elev_gain_m": 4121.0,
+        "active_days": 29,
+        "distance_vs_previous_block_pct": null,
+        "narrative": "threshold proxy is 169.2 bpm; steady-run fade is mild fade; best matched-route signal is 10.9%."
+      }
+    ]
+  },
+  "fun_stats_v2": {
+    "generated_at_utc": "2026-05-12T09:25:38.264640+00:00",
+    "items": [
+      {
+        "label": "Longest public-window day",
+        "value": "21.6 km"
+      },
+      {
+        "label": "Biggest public-window week",
+        "value": "38.5 km"
+      },
+      {
+        "label": "Best matched-route efficiency signal",
+        "value": "10.9%",
+        "context": "GPS matched route 1"
+      },
+      {
+        "label": "Best easy/steady efficiency",
+        "value": 0.0892,
+        "context": "2026-04-23"
+      },
+      {
+        "label": "Hard-ish runs in latest 28 classified runs",
+        "value": 9
+      }
+    ]
+  }
 }

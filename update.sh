@@ -48,6 +48,7 @@ echo
 echo "[2d/5] Generating training insights..."
 
 python scripts/generate_training_insights.py
+python scripts/generate_training_v2.py
 
 echo
 echo "[3/5] Privacy/secret scan of docs/..."
@@ -65,7 +66,6 @@ fi
 
 echo "OK: no obvious secrets/private Strava fields found in docs/."
 
-python scripts/audit_public_docs.py
 
 echo
 echo "[4/5] Staging public dashboard files..."
@@ -74,11 +74,18 @@ git add \
   docs/index.html \
   docs/app.js \
   docs/style.css \
+  docs/training_v2.js \
   docs/insights.js \
   docs/data/summary.json \
   docs/data/daily_metrics.json \
   docs/data/weekly_metrics.json \
   docs/data/activities_recent.json \
+  docs/data/run_types.json \
+  docs/data/efficiency_trends.json \
+  docs/data/matched_route_verdicts.json \
+  docs/data/steady_fade_verdict.json \
+  docs/data/block_review.json \
+  docs/data/fun_stats_v2.json \
   docs/data/insights.json \
   docs/data/threshold_history.json \
   docs/data/drift_summary.json \
@@ -86,8 +93,8 @@ git add \
   docs/data/threshold_history.json \
   docs/data/drift_summary.json \
   scripts/update_static_site.py \
+  scripts/generate_training_v2.py \
   scripts/match_runs_by_gps_efficiency.py \
-  scripts/audit_public_docs.py \
   scripts/generate_training_insights.py \
   scripts/analyse_streams_plus.py \
   scripts/fetch_strava_streams.py \
