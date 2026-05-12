@@ -54,6 +54,7 @@ python scripts/generate_training_insights.py
 python scripts/generate_training_v2.py
 python scripts/generate_aerobic_band.py
 python scripts/generate_data_quality.py
+python scripts/audit_runmetrics_pipeline.py
 python scripts/generate_race_readiness.py
 python scripts/anchor_race_predictions_to_best_efforts.py
 python scripts/add_race_prediction_paces.py
