@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-12T10:15:07.926093+00:00",
+  "generated_at_utc": "2026-05-12T10:27:18.776354+00:00",
   "privacy": {
     "public_site_policy": "Public outputs intentionally avoid GPS coordinates, polylines, maps, activity IDs, activity names, route names, start/end coordinates, and exact route fingerprints. Matched runs use rounded distance/elevation only.",
     "home_address_risk_control": "No public field should be sufficient to reconstruct home location or habitual start/end points."
@@ -828,7 +828,7 @@
     }
   ],
   "run_type_summary": {
-    "generated_at_utc": "2026-05-12T10:15:07.691551+00:00",
+    "generated_at_utc": "2026-05-12T10:27:18.534371+00:00",
     "method": "Public-safe deterministic run classification from distance, duration, elevation, HR relative to threshold proxy, and sport type. No activity IDs, names, routes or GPS are exported.",
     "items": [
       {
@@ -1192,7 +1192,7 @@
     ]
   },
   "easy_run_efficiency": {
-    "generated_at_utc": "2026-05-12T10:15:07.692078+00:00",
+    "generated_at_utc": "2026-05-12T10:27:18.534866+00:00",
     "method": "Easy/steady efficiency = speed_kmh divided by average HR for non-hilly recovery/easy/steady runs. Higher means more speed per heartbeat.",
     "verdict": "not enough data",
     "recent_vs_previous_efficiency_pct": null,
@@ -1256,7 +1256,7 @@
     ]
   },
   "matched_route_verdicts": {
-    "generated_at_utc": "2026-05-12T10:15:07.692135+00:00",
+    "generated_at_utc": "2026-05-12T10:27:18.534925+00:00",
     "method": "Matched-route verdicts are efficiency-led: faster alone is not enough; the question is whether speed per heartbeat improved.",
     "best_signal": {
       "label": "GPS matched route 1",
@@ -1348,7 +1348,7 @@
     "plain_english": "This checks whether you get less speed for the same heartbeat in the second half of steady runs. Closer to 0% is better; strongly negative means you faded."
   },
   "block_review": {
-    "generated_at_utc": "2026-05-12T10:15:07.692472+00:00",
+    "generated_at_utc": "2026-05-12T10:27:18.535287+00:00",
     "items": [
       {
         "label": "Last 4 weeks",
@@ -1386,7 +1386,7 @@
     ]
   },
   "fun_stats_v2": {
-    "generated_at_utc": "2026-05-12T10:15:07.692533+00:00",
+    "generated_at_utc": "2026-05-12T10:27:18.535371+00:00",
     "items": [
       {
         "label": "Longest public-window day",
@@ -1413,7 +1413,7 @@
     ]
   },
   "training_priorities": {
-    "generated_at_utc": "2026-05-12T10:15:07.923347+00:00",
+    "generated_at_utc": "2026-05-12T10:27:18.696919+00:00",
     "method": "Rule-based priorities from public-safe load, run-type, efficiency, matched-route and steady-run fade summaries.",
     "items": [
       {
@@ -1440,7 +1440,7 @@
     ]
   },
   "race_predictions": {
-    "generated_at_utc": "2026-05-12T10:15:07.924183+00:00",
+    "generated_at_utc": "2026-05-12T10:27:18.697787+00:00",
     "date": "2026-05-12",
     "method": "Transparent heuristic. Fitness estimates blend threshold pace proxy with recent observed activity equivalents. Readiness is separately gated by longest recent run and 28-day volume. This is not a guarantee of race performance.",
     "threshold_anchor": {
@@ -1545,7 +1545,19 @@
           "runs_over_65pct_distance": 20
         },
         "confidence": "medium-high",
-        "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far."
+        "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far.",
+        "trend": {
+          "label": "new baseline",
+          "message": "This is the first stored estimate for this distance, so there is no trend yet.",
+          "change_sec": null,
+          "change_pct": null,
+          "previous_date": null
+        },
+        "training_focus": {
+          "primary": "Improve threshold / speed endurance",
+          "rationale": "Readiness is ready. For 5K, the biggest gain is likely from controlled quality rather than simply adding long-run distance.",
+          "training_emphasis": "Use threshold intervals, short tempo blocks, strides, and enough easy volume to absorb them."
+        }
       },
       {
         "race": "10K",
@@ -1635,7 +1647,19 @@
           "runs_over_65pct_distance": 17
         },
         "confidence": "medium-high",
-        "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far."
+        "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far.",
+        "trend": {
+          "label": "new baseline",
+          "message": "This is the first stored estimate for this distance, so there is no trend yet.",
+          "change_sec": null,
+          "change_pct": null,
+          "previous_date": null
+        },
+        "training_focus": {
+          "primary": "Improve threshold / speed endurance",
+          "rationale": "Readiness is ready. For 10K, the biggest gain is likely from controlled quality rather than simply adding long-run distance.",
+          "training_emphasis": "Use threshold intervals, short tempo blocks, strides, and enough easy volume to absorb them."
+        }
       },
       {
         "race": "Half marathon",
@@ -1725,7 +1749,19 @@
           "runs_over_65pct_distance": 5
         },
         "confidence": "medium",
-        "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far."
+        "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far.",
+        "trend": {
+          "label": "new baseline",
+          "message": "This is the first stored estimate for this distance, so there is no trend yet.",
+          "change_sec": null,
+          "change_pct": null,
+          "previous_date": null
+        },
+        "training_focus": {
+          "primary": "Extend sustained aerobic strength",
+          "rationale": "Readiness is ready. The half marathon benefits from both long-run exposure and threshold durability.",
+          "training_emphasis": "Build long-run consistency plus one moderate sustained-effort workout most weeks."
+        }
       },
       {
         "race": "Marathon",
@@ -1766,12 +1802,27 @@
           "runs_over_65pct_distance": 0
         },
         "confidence": "low",
-        "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far."
+        "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far.",
+        "trend": {
+          "label": "new baseline",
+          "message": "This is the first stored estimate for this distance, so there is no trend yet.",
+          "change_sec": null,
+          "change_pct": null,
+          "previous_date": null
+        },
+        "training_focus": {
+          "primary": "Build distance-specific durability",
+          "rationale": "Readiness is plausible but durability-limited. Longest recent run is 21.6 km versus a guardrail of 28.0 km; 28-day volume is 74.3 km versus 150.0 km.",
+          "training_emphasis": "Prioritise consistent easy volume and gradually extending the long run before relying on the predicted time."
+        }
       }
-    ]
+    ],
+    "trend_method": "Trend compares the midpoint of today's estimated range with the previous stored snapshot for the same race. Negative time change means faster/improving.",
+    "training_focus_method": "Training focus is rule-based from readiness, long-run exposure, 28-day volume, fade, run-type balance and easy-efficiency trend.",
+    "enhanced_at_utc": "2026-05-12T10:27:18.774536+00:00"
   },
   "race_predictions_history": {
-    "generated_at_utc": "2026-05-12T10:15:07.924291+00:00",
+    "generated_at_utc": "2026-05-12T10:27:18.697900+00:00",
     "method": "Daily snapshots of derived race-fitness estimates and readiness verdicts. Public-safe; no GPS or activity IDs.",
     "items": [
       {

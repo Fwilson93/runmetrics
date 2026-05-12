@@ -164,3 +164,16 @@ footer { color: var(--muted); padding: 0 clamp(1rem, 4vw, 4rem) 3rem; }
   background: rgba(255,255,255,0.035);
   border: 1px solid var(--border);
 }
+
+.race-trend {
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  font-size: 0.85em;
+}
+.race-trend.improving { color: var(--good); }
+.race-trend.worsening { color: var(--bad); }
+.race-trend.stable,
+.race-trend.new-baseline { color: var(--muted); }

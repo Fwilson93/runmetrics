@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-12T10:15:07.924183+00:00",
+  "generated_at_utc": "2026-05-12T10:27:18.697787+00:00",
   "date": "2026-05-12",
   "method": "Transparent heuristic. Fitness estimates blend threshold pace proxy with recent observed activity equivalents. Readiness is separately gated by longest recent run and 28-day volume. This is not a guarantee of race performance.",
   "threshold_anchor": {
@@ -104,7 +104,19 @@
         "runs_over_65pct_distance": 20
       },
       "confidence": "medium-high",
-      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far."
+      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far.",
+      "trend": {
+        "label": "new baseline",
+        "message": "This is the first stored estimate for this distance, so there is no trend yet.",
+        "change_sec": null,
+        "change_pct": null,
+        "previous_date": null
+      },
+      "training_focus": {
+        "primary": "Improve threshold / speed endurance",
+        "rationale": "Readiness is ready. For 5K, the biggest gain is likely from controlled quality rather than simply adding long-run distance.",
+        "training_emphasis": "Use threshold intervals, short tempo blocks, strides, and enough easy volume to absorb them."
+      }
     },
     {
       "race": "10K",
@@ -194,7 +206,19 @@
         "runs_over_65pct_distance": 17
       },
       "confidence": "medium-high",
-      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far."
+      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far.",
+      "trend": {
+        "label": "new baseline",
+        "message": "This is the first stored estimate for this distance, so there is no trend yet.",
+        "change_sec": null,
+        "change_pct": null,
+        "previous_date": null
+      },
+      "training_focus": {
+        "primary": "Improve threshold / speed endurance",
+        "rationale": "Readiness is ready. For 10K, the biggest gain is likely from controlled quality rather than simply adding long-run distance.",
+        "training_emphasis": "Use threshold intervals, short tempo blocks, strides, and enough easy volume to absorb them."
+      }
     },
     {
       "race": "Half marathon",
@@ -284,7 +308,19 @@
         "runs_over_65pct_distance": 5
       },
       "confidence": "medium",
-      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far."
+      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far.",
+      "trend": {
+        "label": "new baseline",
+        "message": "This is the first stored estimate for this distance, so there is no trend yet.",
+        "change_sec": null,
+        "change_pct": null,
+        "previous_date": null
+      },
+      "training_focus": {
+        "primary": "Extend sustained aerobic strength",
+        "rationale": "Readiness is ready. The half marathon benefits from both long-run exposure and threshold durability.",
+        "training_emphasis": "Build long-run consistency plus one moderate sustained-effort workout most weeks."
+      }
     },
     {
       "race": "Marathon",
@@ -325,7 +361,22 @@
         "runs_over_65pct_distance": 0
       },
       "confidence": "low",
-      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far."
+      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far.",
+      "trend": {
+        "label": "new baseline",
+        "message": "This is the first stored estimate for this distance, so there is no trend yet.",
+        "change_sec": null,
+        "change_pct": null,
+        "previous_date": null
+      },
+      "training_focus": {
+        "primary": "Build distance-specific durability",
+        "rationale": "Readiness is plausible but durability-limited. Longest recent run is 21.6 km versus a guardrail of 28.0 km; 28-day volume is 74.3 km versus 150.0 km.",
+        "training_emphasis": "Prioritise consistent easy volume and gradually extending the long run before relying on the predicted time."
+      }
     }
-  ]
+  ],
+  "trend_method": "Trend compares the midpoint of today's estimated range with the previous stored snapshot for the same race. Negative time change means faster/improving.",
+  "training_focus_method": "Training focus is rule-based from readiness, long-run exposure, 28-day volume, fade, run-type balance and easy-efficiency trend.",
+  "enhanced_at_utc": "2026-05-12T10:27:18.774536+00:00"
 }

@@ -53,6 +53,7 @@ python scripts/generate_training_insights.py
 python scripts/generate_training_v2.py
 python scripts/generate_data_quality.py
 python scripts/generate_race_readiness.py
+python scripts/enhance_race_predictions.py
 
 echo
 echo "[3/5] Privacy/secret scan of docs/..."
@@ -105,6 +106,7 @@ git add \
   docs/data/drift_summary.json \
   docs/data/matched_runs.json \
   scripts/update_static_site.py \
+  scripts/enhance_race_predictions.py \
   scripts/generate_race_readiness.py \
   scripts/check_route_thumbnails.py \
   scripts/generate_route_thumbnails.py \
