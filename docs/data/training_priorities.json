@@ -1,27 +1,13 @@
 {
-  "generated_at_utc": "2026-05-12T10:27:18.696919+00:00",
+  "generated_at_utc": "2026-05-12T10:38:29.789258+00:00",
   "method": "Rule-based priorities from public-safe load, run-type, efficiency, matched-route and steady-run fade summaries.",
   "items": [
     {
       "rank": 1,
-      "area": "Easy-run efficiency",
-      "status": "not enough data",
-      "message": "There is not enough clean easy/steady efficiency data yet.",
-      "suggestion": "Keep easy runs genuinely easy and collect more comparable HR data."
-    },
-    {
-      "rank": 2,
       "area": "Hard/easy balance",
       "status": "watch",
       "message": "There are 9 hard-ish classified runs in the latest 28 classified runs.",
       "suggestion": "Make sure easy volume is not drifting into moderate effort too often."
-    },
-    {
-      "rank": 3,
-      "area": "Matched-route efficiency",
-      "status": "signal",
-      "message": "Best matched-route signal is 10.9% speed per heartbeat.",
-      "suggestion": "Use this as route-specific evidence, but keep broader easy-efficiency and durability signals in view."
     }
   ]
 }

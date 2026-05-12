@@ -1,7 +1,7 @@
 {
-  "generated_at_utc": "2026-05-12T10:27:18.697787+00:00",
+  "generated_at_utc": "2026-05-12T10:38:29.788958+00:00",
   "date": "2026-05-12",
-  "method": "Transparent heuristic. Fitness estimates blend threshold pace proxy with recent observed activity equivalents. Readiness is separately gated by longest recent run and 28-day volume. This is not a guarantee of race performance.",
+  "method": "Transparent heuristic. Race order is 5K, 10K, 1/2M, marathon, 50K, 100K. Fitness estimates blend threshold pace proxy with observed activity equivalents. Trend compares current performance with activity-derived equivalents from roughly three months ago. Readiness is separately gated by longest recent run and 28-day volume.",
   "threshold_anchor": {
     "date": "2026-05-12",
     "threshold_hr_proxy": 169.2,
@@ -18,13 +18,14 @@
   "items": [
     {
       "race": "5K",
+      "full_name": "5K",
       "distance_km": 5.0,
       "fitness_estimate": {
         "distance_km": 5.0,
         "fast_time_sec": 1221.0,
-        "slow_time_sec": 1319.0,
+        "slow_time_sec": 1294.0,
         "fast_time": "20:21",
-        "slow_time": "21:59",
+        "slow_time": "21:34",
         "sources": [
           "observed_activity",
           "threshold_proxy_fast",
@@ -38,7 +39,7 @@
           "estimated_time_sec": 1221.0,
           "estimated_time": "20:21"
         },
-        "note": "Range blends threshold-proxy estimate with recent observed activity equivalents; readiness is assessed separately."
+        "note": "Range blends threshold proxy with recent observed activity equivalents. Readiness is assessed separately."
       },
       "threshold_estimate": {
         "source": "threshold_proxy",
@@ -104,7 +105,6 @@
         "runs_over_65pct_distance": 20
       },
       "confidence": "medium-high",
-      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far.",
       "trend": {
         "label": "new baseline",
         "message": "This is the first stored estimate for this distance, so there is no trend yet.",
@@ -116,17 +116,19 @@
         "primary": "Improve threshold / speed endurance",
         "rationale": "Readiness is ready. For 5K, the biggest gain is likely from controlled quality rather than simply adding long-run distance.",
         "training_emphasis": "Use threshold intervals, short tempo blocks, strides, and enough easy volume to absorb them."
-      }
+      },
+      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate."
     },
     {
       "race": "10K",
+      "full_name": "10K",
       "distance_km": 10.0,
       "fitness_estimate": {
         "distance_km": 10.0,
         "fast_time_sec": 2546.0,
-        "slow_time_sec": 2750.0,
+        "slow_time_sec": 2699.0,
         "fast_time": "42:26",
-        "slow_time": "45:50",
+        "slow_time": "44:59",
         "sources": [
           "observed_activity",
           "threshold_proxy_fast",
@@ -140,7 +142,7 @@
           "estimated_time_sec": 2546.0,
           "estimated_time": "42:26"
         },
-        "note": "Range blends threshold-proxy estimate with recent observed activity equivalents; readiness is assessed separately."
+        "note": "Range blends threshold proxy with recent observed activity equivalents. Readiness is assessed separately."
       },
       "threshold_estimate": {
         "source": "threshold_proxy",
@@ -206,7 +208,6 @@
         "runs_over_65pct_distance": 17
       },
       "confidence": "medium-high",
-      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far.",
       "trend": {
         "label": "new baseline",
         "message": "This is the first stored estimate for this distance, so there is no trend yet.",
@@ -218,10 +219,12 @@
         "primary": "Improve threshold / speed endurance",
         "rationale": "Readiness is ready. For 10K, the biggest gain is likely from controlled quality rather than simply adding long-run distance.",
         "training_emphasis": "Use threshold intervals, short tempo blocks, strides, and enough easy volume to absorb them."
-      }
+      },
+      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate."
     },
     {
-      "race": "Half marathon",
+      "race": "1/2M",
+      "full_name": "Half marathon",
       "distance_km": 21.0975,
       "fitness_estimate": {
         "distance_km": 21.0975,
@@ -242,7 +245,7 @@
           "estimated_time_sec": 5618.0,
           "estimated_time": "1:33:38"
         },
-        "note": "Range blends threshold-proxy estimate with recent observed activity equivalents; readiness is assessed separately."
+        "note": "Range blends threshold proxy with recent observed activity equivalents. Readiness is assessed separately."
       },
       "threshold_estimate": {
         "source": "threshold_proxy",
@@ -308,7 +311,6 @@
         "runs_over_65pct_distance": 5
       },
       "confidence": "medium",
-      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far.",
       "trend": {
         "label": "new baseline",
         "message": "This is the first stored estimate for this distance, so there is no trend yet.",
@@ -317,26 +319,36 @@
         "previous_date": null
       },
       "training_focus": {
-        "primary": "Extend sustained aerobic strength",
-        "rationale": "Readiness is ready. The half marathon benefits from both long-run exposure and threshold durability.",
-        "training_emphasis": "Build long-run consistency plus one moderate sustained-effort workout most weeks."
-      }
+        "primary": "Maintain consistency",
+        "rationale": "No dominant limiter was identified from the current public-safe metrics.",
+        "training_emphasis": "Keep training consistent and reassess after more comparable data accumulates."
+      },
+      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate."
     },
     {
       "race": "Marathon",
+      "full_name": "Marathon",
       "distance_km": 42.195,
       "fitness_estimate": {
         "distance_km": 42.195,
-        "fast_time_sec": 13474.0,
-        "slow_time_sec": 14786.0,
-        "fast_time": "3:44:34",
-        "slow_time": "4:06:26",
+        "fast_time_sec": 11712.0,
+        "slow_time_sec": 13117.0,
+        "fast_time": "3:15:12",
+        "slow_time": "3:38:37",
         "sources": [
+          "observed_activity",
           "threshold_proxy_fast",
           "threshold_proxy_slow"
         ],
-        "best_observed_equivalent": null,
-        "note": "Range blends threshold-proxy estimate with recent observed activity equivalents; readiness is assessed separately."
+        "best_observed_equivalent": {
+          "date": "2026-04-11",
+          "source_distance_km": 21.21,
+          "source_time_sec": 5649.0,
+          "source_time": "1:34:09",
+          "estimated_time_sec": 11712.0,
+          "estimated_time": "3:15:12"
+        },
+        "note": "Range blends threshold proxy with recent observed activity equivalents. Readiness is assessed separately."
       },
       "threshold_estimate": {
         "source": "threshold_proxy",
@@ -350,7 +362,24 @@
           5.84
         ]
       },
-      "observed_equivalents": [],
+      "observed_equivalents": [
+        {
+          "date": "2026-04-11",
+          "source_distance_km": 21.21,
+          "source_time_sec": 5649.0,
+          "source_time": "1:34:09",
+          "estimated_time_sec": 11712.0,
+          "estimated_time": "3:15:12"
+        },
+        {
+          "date": "2026-03-12",
+          "source_distance_km": 21.56,
+          "source_time_sec": 6466.0,
+          "source_time": "1:47:46",
+          "estimated_time_sec": 13173.0,
+          "estimated_time": "3:39:33"
+        }
+      ],
       "readiness": {
         "verdict": "plausible but durability-limited",
         "limiter": "Fitness may exist, but recent long-run or 28-day volume is below the configured readiness guardrail.",
@@ -361,7 +390,6 @@
         "runs_over_65pct_distance": 0
       },
       "confidence": "low",
-      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; readiness separately checks whether recent distance-specific training supports actually racing that far.",
       "trend": {
         "label": "new baseline",
         "message": "This is the first stored estimate for this distance, so there is no trend yet.",
@@ -373,10 +401,119 @@
         "primary": "Build distance-specific durability",
         "rationale": "Readiness is plausible but durability-limited. Longest recent run is 21.6 km versus a guardrail of 28.0 km; 28-day volume is 74.3 km versus 150.0 km.",
         "training_emphasis": "Prioritise consistent easy volume and gradually extending the long run before relying on the predicted time."
-      }
+      },
+      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate."
+    },
+    {
+      "race": "50K",
+      "full_name": "50K",
+      "distance_km": 50.0,
+      "fitness_estimate": {
+        "distance_km": 50.0,
+        "fast_time_sec": 17239.0,
+        "slow_time_sec": 19782.0,
+        "fast_time": "4:47:19",
+        "slow_time": "5:29:42",
+        "sources": [
+          "threshold_proxy_fast",
+          "threshold_proxy_slow"
+        ],
+        "best_observed_equivalent": null,
+        "note": "Range blends threshold proxy with recent observed activity equivalents. Readiness is assessed separately."
+      },
+      "threshold_estimate": {
+        "source": "threshold_proxy",
+        "distance_km": 50.0,
+        "fast_time_sec": 17239.0,
+        "slow_time_sec": 19782.0,
+        "fast_time": "4:47:19",
+        "slow_time": "5:29:42",
+        "pace_range_min_per_km": [
+          5.75,
+          6.59
+        ]
+      },
+      "observed_equivalents": [],
+      "readiness": {
+        "verdict": "plausible but durability-limited",
+        "limiter": "Fitness may exist, but recent long-run or 28-day volume is below the configured readiness guardrail.",
+        "longest_recent_run_km": 21.6,
+        "last_28d_distance_km": 74.3,
+        "required_long_run_km": 35.0,
+        "required_28d_distance_km": 180.0,
+        "runs_over_65pct_distance": 0
+      },
+      "confidence": "low",
+      "trend": {
+        "label": "new baseline",
+        "message": "This is the first stored estimate for this distance, so there is no trend yet.",
+        "change_sec": null,
+        "change_pct": null,
+        "previous_date": null
+      },
+      "training_focus": {
+        "primary": "Build distance-specific durability",
+        "rationale": "Readiness is plausible but durability-limited. Longest recent run is 21.6 km versus a guardrail of 35.0 km; 28-day volume is 74.3 km versus 180.0 km.",
+        "training_emphasis": "Prioritise consistent easy volume and gradually extending the long run before relying on the predicted time."
+      },
+      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate."
+    },
+    {
+      "race": "100K",
+      "full_name": "100K",
+      "distance_km": 100.0,
+      "fitness_estimate": {
+        "distance_km": 100.0,
+        "fast_time_sec": 40977.0,
+        "slow_time_sec": 52281.0,
+        "fast_time": "11:22:57",
+        "slow_time": "14:31:21",
+        "sources": [
+          "threshold_proxy_fast",
+          "threshold_proxy_slow"
+        ],
+        "best_observed_equivalent": null,
+        "note": "Range blends threshold proxy with recent observed activity equivalents. Readiness is assessed separately."
+      },
+      "threshold_estimate": {
+        "source": "threshold_proxy",
+        "distance_km": 100.0,
+        "fast_time_sec": 40977.0,
+        "slow_time_sec": 52281.0,
+        "fast_time": "11:22:57",
+        "slow_time": "14:31:21",
+        "pace_range_min_per_km": [
+          6.83,
+          8.71
+        ]
+      },
+      "observed_equivalents": [],
+      "readiness": {
+        "verdict": "not distance-ready",
+        "limiter": "Current data does not show enough distance-specific preparation; you probably should not trust the fitness estimate for this distance yet.",
+        "longest_recent_run_km": 21.6,
+        "last_28d_distance_km": 74.3,
+        "required_long_run_km": 50.0,
+        "required_28d_distance_km": 260.0,
+        "runs_over_65pct_distance": 0
+      },
+      "confidence": "low",
+      "trend": {
+        "label": "new baseline",
+        "message": "This is the first stored estimate for this distance, so there is no trend yet.",
+        "change_sec": null,
+        "change_pct": null,
+        "previous_date": null
+      },
+      "training_focus": {
+        "primary": "Build distance-specific durability",
+        "rationale": "Readiness is not distance-ready. Longest recent run is 21.6 km versus a guardrail of 50.0 km; 28-day volume is 74.3 km versus 260.0 km.",
+        "training_emphasis": "Prioritise consistent easy volume and gradually extending the long run before relying on the predicted time."
+      },
+      "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate."
     }
   ],
   "trend_method": "Trend compares the midpoint of today's estimated range with the previous stored snapshot for the same race. Negative time change means faster/improving.",
   "training_focus_method": "Training focus is rule-based from readiness, long-run exposure, 28-day volume, fade, run-type balance and easy-efficiency trend.",
-  "enhanced_at_utc": "2026-05-12T10:27:18.774536+00:00"
+  "enhanced_at_utc": "2026-05-12T10:38:29.874494+00:00"
 }

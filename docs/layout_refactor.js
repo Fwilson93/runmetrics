@@ -17,6 +17,7 @@
 
     if (id === 'cards' || id === 'scienceCards' || h.includes('suggested next') || h.includes('load caution') || h.includes('current advice') || h.includes('this week')) return 'Today';
     if (h.includes('ctl') || h.includes('threshold') || h.includes('easy-run') || h.includes('speed per heartbeat') || h.includes('steady-run') || h.includes('aerobic durability') || h.includes('daily load') || h.includes('pace trend') || h.includes('fitness') || cls.includes('grid')) return 'Fitness trends';
+    if (h.includes('race outlook') || h.includes('race prediction') || h.includes('training priorities') || h.includes('weak points') || h.includes('readiness')) return 'Race estimates';
     if (h.includes('matched') || h.includes('route') || h.includes('gps')) return 'Routes';
     if (h.includes('run type') || h.includes('training block') || h.includes('weekly') || h.includes('heatmap') || h.includes('fun stats')) return 'Training balance';
     if (h.includes('data quality') || h.includes('recent activities') || h.includes('privacy') || h.includes('method') || h.includes('details')) return 'Details / QA';
@@ -26,6 +27,7 @@
   const order = [
     { name: 'Today', open: true },
     { name: 'Fitness trends', open: true },
+    { name: 'Race estimates', open: true },
     { name: 'Routes', open: true },
     { name: 'Training balance', open: false },
     { name: 'Details / QA', open: false },

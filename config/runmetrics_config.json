@@ -37,6 +37,18 @@
     "Marathon": {
       "min_recent_long_run_km": 28,
       "min_28d_distance_km": 150
+    },
+    "1/2M": {
+      "min_recent_long_run_km": 16,
+      "min_28d_distance_km": 70
+    },
+    "50K": {
+      "min_recent_long_run_km": 35,
+      "min_28d_distance_km": 180
+    },
+    "100K": {
+      "min_recent_long_run_km": 50,
+      "min_28d_distance_km": 260
     }
   }
 }
