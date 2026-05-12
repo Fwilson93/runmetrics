@@ -1,17 +1,7 @@
 {
-  "generated_at_utc": "2026-05-12T13:20:56.451071+00:00",
+  "generated_at_utc": "2026-05-12T13:28:23.280912+00:00",
   "method": "Daily snapshots of derived race-fitness estimates and readiness verdicts. Public-safe; no GPS or activity IDs.",
   "items": [
-    {
-      "date": "2026-05-12",
-      "race": "1/2M",
-      "fast_time_sec": 5618.0,
-      "slow_time_sec": 6067.0,
-      "fast_time": "1:33:38",
-      "slow_time": "1:41:07",
-      "readiness": "ready",
-      "confidence": "medium"
-    },
     {
       "date": "2026-05-12",
       "race": "100K",
@@ -21,6 +11,30 @@
       "slow_time": "14:31:21",
       "readiness": "not distance-ready",
       "confidence": "low"
+    },
+    {
+      "distance": "10K",
+      "race": "10K",
+      "race_distance": "10K",
+      "generated_at_utc": "2026-02-11T13:20:56Z",
+      "date": "2026-02-11T13:20:56Z",
+      "estimate_seconds": 2889.7,
+      "predicted_seconds": 2889.7,
+      "predicted_time_seconds": 2889.7,
+      "time_seconds": 2889.7,
+      "estimate_min": 48.162,
+      "predicted_minutes": 48.162,
+      "estimate": "48:10",
+      "predicted_time": "48:10",
+      "time": "48:10",
+      "source": "backfilled_from_activities_raw",
+      "backfilled": true,
+      "method": "Riegel projection from best eligible historical run before cutoff; exponent=1.06",
+      "source_activity_id": 17305157685,
+      "source_activity_date": "2026-02-06T11:38:21Z",
+      "source_activity_distance_km": 5.01,
+      "source_activity_moving_time_s": 1389.0,
+      "source_activity_name": "5km Easy Run"
     },
     {
       "date": "2026-05-12",
@@ -43,6 +57,30 @@
       "confidence": "low"
     },
     {
+      "distance": "5K",
+      "race": "5K",
+      "race_distance": "5K",
+      "generated_at_utc": "2026-02-11T13:20:56Z",
+      "date": "2026-02-11T13:20:56Z",
+      "estimate_seconds": 1386.0,
+      "predicted_seconds": 1386.0,
+      "predicted_time_seconds": 1386.0,
+      "time_seconds": 1386.0,
+      "estimate_min": 23.1,
+      "predicted_minutes": 23.1,
+      "estimate": "23:06",
+      "predicted_time": "23:06",
+      "time": "23:06",
+      "source": "backfilled_from_activities_raw",
+      "backfilled": true,
+      "method": "Riegel projection from best eligible historical run before cutoff; exponent=1.06",
+      "source_activity_id": 17305157685,
+      "source_activity_date": "2026-02-06T11:38:21Z",
+      "source_activity_distance_km": 5.01,
+      "source_activity_moving_time_s": 1389.0,
+      "source_activity_name": "5km Easy Run"
+    },
+    {
       "date": "2026-05-12",
       "race": "5K",
       "fast_time_sec": 1221.0,
@@ -51,6 +89,40 @@
       "slow_time": "21:34",
       "readiness": "ready",
       "confidence": "medium-high"
+    },
+    {
+      "distance": "Half marathon",
+      "race": "Half marathon",
+      "race_distance": "Half marathon",
+      "generated_at_utc": "2026-02-11T13:20:56Z",
+      "date": "2026-02-11T13:20:56Z",
+      "estimate_seconds": 6568.7,
+      "predicted_seconds": 6568.7,
+      "predicted_time_seconds": 6568.7,
+      "time_seconds": 6568.7,
+      "estimate_min": 109.479,
+      "predicted_minutes": 109.479,
+      "estimate": "1:49:29",
+      "predicted_time": "1:49:29",
+      "time": "1:49:29",
+      "source": "backfilled_from_activities_raw",
+      "backfilled": true,
+      "method": "Riegel projection from best eligible historical run before cutoff; exponent=1.06",
+      "source_activity_id": 17251675178,
+      "source_activity_date": "2026-02-01T15:16:30Z",
+      "source_activity_distance_km": 7.03,
+      "source_activity_moving_time_s": 2049.0,
+      "source_activity_name": "Tempo 2km Repeats"
+    },
+    {
+      "date": "2026-05-12",
+      "race": "1/2M",
+      "fast_time_sec": 5618.0,
+      "slow_time_sec": 6067.0,
+      "fast_time": "1:33:38",
+      "slow_time": "1:41:07",
+      "readiness": "ready",
+      "confidence": "medium"
     },
     {
       "date": "2026-05-12",
@@ -62,5 +134,6 @@
       "readiness": "plausible but durability-limited",
       "confidence": "low"
     }
-  ]
+  ],
+  "backfill_note": "Historical race estimates may include backfilled Riegel projections from older activities where stored race prediction history was missing."
 }
