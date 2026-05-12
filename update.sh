@@ -53,6 +53,7 @@ python scripts/generate_training_insights.py
 python scripts/generate_training_v2.py
 python scripts/generate_data_quality.py
 python scripts/generate_race_readiness.py
+python scripts/generate_race_scenarios.py
 python scripts/backfill_race_prediction_history.py
 python scripts/enhance_race_predictions.py
 
