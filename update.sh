@@ -29,6 +29,13 @@ echo "[2/5] Updating static dashboard data..."
 python scripts/update_static_site.py
 
 echo
+echo "[2b/5] Updating local/private Strava stream cache..."
+
+# Local-only stream cache for later threshold / HR-drift analysis.
+# This writes to data/strava/streams/, which is gitignored and not published.
+python scripts/fetch_strava_streams.py --after-days 120 --max-new 25
+
+echo
 echo "[3/5] Privacy/secret scan of docs/..."
 
 # These should never appear in public GitHub Pages output.
@@ -56,6 +63,7 @@ git add \
   docs/data/weekly_metrics.json \
   docs/data/activities_recent.json \
   scripts/update_static_site.py \
+  scripts/fetch_strava_streams.py \
   update.sh
 
 echo
