@@ -44,6 +44,7 @@ echo
 echo "[2c-extra/5] Matching repeated runs locally by GPS efficiency..."
 python scripts/run_gps_match_from_config.py
 python scripts/generate_route_thumbnails.py
+python scripts/check_route_thumbnails.py
 
 echo
 echo "[2d/5] Generating training insights..."
@@ -77,6 +78,8 @@ git add \
   docs/index.html \
   docs/app.js \
   docs/style.css \
+  docs/layout_refactor.css \
+  docs/layout_refactor.js \
   docs/data_quality.js \
   docs/training_v2.js \
   docs/insights.js \
@@ -99,6 +102,7 @@ git add \
   docs/data/threshold_history.json \
   docs/data/drift_summary.json \
   scripts/update_static_site.py \
+  scripts/check_route_thumbnails.py \
   scripts/generate_route_thumbnails.py \
   scripts/generate_data_quality.py \
   scripts/run_gps_match_from_config.py \
