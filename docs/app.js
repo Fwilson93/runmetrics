@@ -271,3 +271,8 @@ async function main() {
 main().catch(err => {
   document.body.innerHTML = `<main class="panel"><h1>RunMetrics failed to load</h1><pre>${err.stack || err}</pre></main>`;
 });
+
+// Route thumbnails for matched-run table/cards, if present in matched_runs.json.
+(function addRouteThumbStylesHook(){
+  window.runmetricsRouteThumbsEnabled = true;
+})();
