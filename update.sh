@@ -52,6 +52,7 @@ echo "[2d/5] Generating training insights..."
 python scripts/generate_training_insights.py
 python scripts/generate_training_v2.py
 python scripts/generate_data_quality.py
+python scripts/generate_race_readiness.py
 
 echo
 echo "[3/5] Privacy/secret scan of docs/..."
@@ -78,6 +79,7 @@ git add \
   docs/index.html \
   docs/app.js \
   docs/style.css \
+  docs/race_readiness.js \
   docs/layout_refactor.css \
   docs/layout_refactor.js \
   docs/data_quality.js \
@@ -87,6 +89,9 @@ git add \
   docs/data/daily_metrics.json \
   docs/data/weekly_metrics.json \
   docs/data/activities_recent.json \
+  docs/data/training_priorities.json \
+  docs/data/race_predictions.json \
+  docs/data/race_predictions_history.json \
   docs/assets/routes/ \
   docs/data/data_quality.json \
   docs/data/run_types.json \
@@ -99,9 +104,8 @@ git add \
   docs/data/threshold_history.json \
   docs/data/drift_summary.json \
   docs/data/matched_runs.json \
-  docs/data/threshold_history.json \
-  docs/data/drift_summary.json \
   scripts/update_static_site.py \
+  scripts/generate_race_readiness.py \
   scripts/check_route_thumbnails.py \
   scripts/generate_route_thumbnails.py \
   scripts/generate_data_quality.py \

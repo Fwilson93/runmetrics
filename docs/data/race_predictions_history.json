@@ -1,0 +1,38 @@
+{
+  "generated_at_utc": "2026-05-12T10:07:18.922415+00:00",
+  "method": "Daily snapshots of derived race-fitness estimates and readiness verdicts. Public-safe; no GPS or activity IDs.",
+  "items": [
+    {
+      "date": "2026-05-12",
+      "race": "10K",
+      "fast_time_sec": 2685.0,
+      "slow_time_sec": 2826.0,
+      "readiness": "ready",
+      "confidence": "medium-high"
+    },
+    {
+      "date": "2026-05-12",
+      "race": "5K",
+      "fast_time_sec": 1272.0,
+      "slow_time_sec": 1342.0,
+      "readiness": "ready",
+      "confidence": "medium-high"
+    },
+    {
+      "date": "2026-05-12",
+      "race": "Half marathon",
+      "fast_time_sec": 6141.0,
+      "slow_time_sec": 6499.0,
+      "readiness": "ready",
+      "confidence": "medium"
+    },
+    {
+      "date": "2026-05-12",
+      "race": "Marathon",
+      "fast_time_sec": 13474.0,
+      "slow_time_sec": 14786.0,
+      "readiness": "plausible but durability-limited",
+      "confidence": "low"
+    }
+  ]
+}

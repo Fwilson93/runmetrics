@@ -20,5 +20,23 @@
   "display": {
     "matched_runs_metric_label": "Speed per heartbeat",
     "show_data_quality_panel": true
+  },
+  "race_readiness": {
+    "5K": {
+      "min_recent_long_run_km": 5,
+      "min_28d_distance_km": 20
+    },
+    "10K": {
+      "min_recent_long_run_km": 9,
+      "min_28d_distance_km": 35
+    },
+    "Half marathon": {
+      "min_recent_long_run_km": 16,
+      "min_28d_distance_km": 70
+    },
+    "Marathon": {
+      "min_recent_long_run_km": 28,
+      "min_28d_distance_km": 150
+    }
   }
 }
