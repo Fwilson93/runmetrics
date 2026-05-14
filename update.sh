@@ -53,6 +53,7 @@ echo "[2d/5] Generating training insights..."
 python scripts/generate_training_insights.py
 python scripts/generate_training_v2.py
 python scripts/generate_aerobic_band.py
+python scripts/generate_easy_run_hr_cap.py
 python scripts/generate_data_quality.py
 python scripts/audit_runmetrics_pipeline.py
 python scripts/generate_race_readiness.py

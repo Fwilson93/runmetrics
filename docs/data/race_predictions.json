@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-14T07:29:27.220802+00:00",
+  "generated_at_utc": "2026-05-14T08:01:14.241106+00:00",
   "date": "2026-05-14",
   "method": "Transparent heuristic. Race order is 5K, 10K, 1/2M, marathon, 50K, 100K. Fitness estimates blend threshold pace proxy with observed activity equivalents. Trend compares current performance with activity-derived equivalents from roughly three months ago. Readiness is separately gated by longest recent run and 28-day volume.",
   "threshold_anchor": {
@@ -565,12 +565,12 @@
     }
   ],
   "anchoring": {
-    "generated_at_utc": "2026-05-14T07:29:27Z",
+    "generated_at_utc": "2026-05-14T08:01:14Z",
     "source": "docs/data/best_efforts.json",
     "rule": "Displayed anchored prediction is min(model prediction, observed rolling best effort) for matching distance.",
     "anchored_count": 0
   },
   "trend_method": "Trend compares the midpoint of today's estimated range with the previous stored snapshot for the same race. Negative time change means faster/improving.",
   "training_focus_method": "Training focus is rule-based from readiness, long-run exposure, 28-day volume, fade, run-type balance and easy-efficiency trend.",
-  "enhanced_at_utc": "2026-05-14T07:29:28.156803+00:00"
+  "enhanced_at_utc": "2026-05-14T08:01:16.442646+00:00"
 }
