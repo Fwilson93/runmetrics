@@ -1,9 +1,9 @@
 {
-  "generated_at_utc": "2026-05-12T14:17:56.956695+00:00",
+  "generated_at_utc": "2026-05-14T07:29:26.818786+00:00",
   "activities_recent_public": 20,
-  "local_stream_files": 40,
+  "local_stream_files": 41,
   "threshold_points": 10,
-  "drift_points": 29,
+  "drift_points": 30,
   "matched_route_groups": 7,
   "classified_runs_public": 20,
   "note": "Public-safe quality summary only. No activity IDs, GPS, route names or coordinates are exported."

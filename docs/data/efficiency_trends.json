@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-12T14:17:56.761163+00:00",
+  "generated_at_utc": "2026-05-14T07:29:26.454904+00:00",
   "method": "Easy/steady efficiency = speed_kmh divided by average HR for non-hilly recovery/easy/steady runs. Higher means more speed per heartbeat.",
   "verdict": "not enough data",
   "recent_vs_previous_efficiency_pct": null,
@@ -13,51 +13,43 @@
       "type": "steady"
     },
     {
-      "date": "2026-04-28",
-      "efficiency_kmh_per_bpm": 0.0848,
-      "rolling_efficiency_kmh_per_bpm": 0.0862,
-      "rolling_pace_min_per_km": 4.55,
-      "rolling_avg_hr": 152.7,
-      "type": "steady"
-    },
-    {
       "date": "2026-04-23",
       "efficiency_kmh_per_bpm": 0.0892,
-      "rolling_efficiency_kmh_per_bpm": 0.0872,
-      "rolling_pace_min_per_km": 4.53,
-      "rolling_avg_hr": 151.8,
+      "rolling_efficiency_kmh_per_bpm": 0.0885,
+      "rolling_pace_min_per_km": 4.52,
+      "rolling_avg_hr": 150.1,
       "type": "steady"
     },
     {
       "date": "2026-04-16",
       "efficiency_kmh_per_bpm": 0.0863,
-      "rolling_efficiency_kmh_per_bpm": 0.087,
-      "rolling_pace_min_per_km": 4.59,
-      "rolling_avg_hr": 150.2,
+      "rolling_efficiency_kmh_per_bpm": 0.0877,
+      "rolling_pace_min_per_km": 4.6,
+      "rolling_avg_hr": 148.6,
       "type": "steady"
     },
     {
       "date": "2026-03-31",
       "efficiency_kmh_per_bpm": 0.083,
-      "rolling_efficiency_kmh_per_bpm": 0.0862,
-      "rolling_pace_min_per_km": 4.67,
-      "rolling_avg_hr": 149.3,
+      "rolling_efficiency_kmh_per_bpm": 0.0866,
+      "rolling_pace_min_per_km": 4.69,
+      "rolling_avg_hr": 147.9,
       "type": "steady"
     },
     {
       "date": "2026-03-29",
       "efficiency_kmh_per_bpm": 0.0663,
-      "rolling_efficiency_kmh_per_bpm": 0.0829,
-      "rolling_pace_min_per_km": 4.95,
-      "rolling_avg_hr": 148.1,
-      "type": "easy"
+      "rolling_efficiency_kmh_per_bpm": 0.0825,
+      "rolling_pace_min_per_km": 5.03,
+      "rolling_avg_hr": 146.7,
+      "type": "steady"
     },
     {
       "date": "2026-03-17",
       "efficiency_kmh_per_bpm": 0.0791,
-      "rolling_efficiency_kmh_per_bpm": 0.0814,
+      "rolling_efficiency_kmh_per_bpm": 0.0819,
       "rolling_pace_min_per_km": 5.01,
-      "rolling_avg_hr": 148.9,
+      "rolling_avg_hr": 148.1,
       "type": "steady"
     }
   ]

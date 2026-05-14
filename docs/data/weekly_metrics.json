@@ -222,15 +222,15 @@
   },
   {
     "date": "2026-05-11",
-    "activities": 1.0,
-    "distance_km": 10.142,
-    "moving_time_min": 44.9,
-    "elev_gain_m": 148.0,
-    "load_trimp": 100.529,
-    "avg_hr": 160.9,
-    "pace_min_per_km": 4.427,
-    "efficiency_factor": 63.035,
-    "distance_4w_avg": 17.394,
-    "load_4w_avg": 159.95
+    "activities": 2.0,
+    "distance_km": 20.38,
+    "moving_time_min": 91.633,
+    "elev_gain_m": 295.6,
+    "load_trimp": 198.732,
+    "avg_hr": 159.5,
+    "pace_min_per_km": 4.496,
+    "efficiency_factor": 63.894,
+    "distance_4w_avg": 19.954,
+    "load_4w_avg": 184.5
   }
 ]

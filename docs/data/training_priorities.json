@@ -1,12 +1,12 @@
 {
-  "generated_at_utc": "2026-05-12T14:17:57.109773+00:00",
+  "generated_at_utc": "2026-05-14T07:29:27.221540+00:00",
   "method": "Rule-based priorities from public-safe load, run-type, efficiency, matched-route and steady-run fade summaries.",
   "items": [
     {
       "rank": 1,
       "area": "Hard/easy balance",
       "status": "watch",
-      "message": "There are 9 hard-ish classified runs in the latest 28 classified runs.",
+      "message": "There are 10 hard-ish classified runs in the latest 28 classified runs.",
       "suggestion": "Make sure easy volume is not drifting into moderate effort too often."
     }
   ]

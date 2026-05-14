@@ -2004,5 +2004,39 @@
     "distance_7d": 10.142,
     "load_7d": 100.529,
     "load_28d": 674.868
+  },
+  {
+    "date": "2026-05-13",
+    "activities": 0.0,
+    "distance_km": 0.0,
+    "moving_time_min": 0.0,
+    "elev_gain_m": 0.0,
+    "load_trimp": 0.0,
+    "avg_hr": null,
+    "pace_min_per_km": null,
+    "efficiency_factor": null,
+    "ctl": 28.202,
+    "atl": 23.986,
+    "tsb": 4.216,
+    "distance_7d": 10.142,
+    "load_7d": 100.529,
+    "load_28d": 674.868
+  },
+  {
+    "date": "2026-05-14",
+    "activities": 1.0,
+    "distance_km": 10.237,
+    "moving_time_min": 46.733,
+    "elev_gain_m": 147.6,
+    "load_trimp": 98.203,
+    "avg_hr": 158.1,
+    "pace_min_per_km": 4.565,
+    "efficiency_factor": 64.753,
+    "ctl": 29.869,
+    "atl": 34.589,
+    "tsb": -4.72,
+    "distance_7d": 20.38,
+    "load_7d": 198.732,
+    "load_28d": 738.001
   }
 ]

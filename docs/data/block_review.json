@@ -1,38 +1,38 @@
 {
-  "generated_at_utc": "2026-05-12T14:17:56.761686+00:00",
+  "generated_at_utc": "2026-05-14T07:29:26.455843+00:00",
   "items": [
     {
       "label": "Last 4 weeks",
       "days": 28,
-      "distance_km": 74.3,
-      "km_per_week": 18.6,
-      "load": 675.0,
-      "elev_gain_m": 1135.0,
+      "distance_km": 79.8,
+      "km_per_week": 20.0,
+      "load": 738.0,
+      "elev_gain_m": 1219.0,
       "active_days": 8,
-      "distance_vs_previous_block_pct": -27.2,
-      "narrative": "volume is down sharply; threshold proxy is 169.2 bpm; steady-run fade is mild fade; best matched-route signal is 10.9%."
+      "distance_vs_previous_block_pct": -7.7,
+      "narrative": "volume is broadly stable; threshold proxy is 168.6 bpm; steady-run fade is mild fade; best matched-route signal is 10.9%."
     },
     {
       "label": "Last 8 weeks",
       "days": 56,
-      "distance_km": 176.3,
-      "km_per_week": 22.0,
-      "load": 1687.0,
-      "elev_gain_m": 2314.0,
+      "distance_km": 166.3,
+      "km_per_week": 20.8,
+      "load": 1610.0,
+      "elev_gain_m": 2147.0,
       "active_days": 16,
-      "distance_vs_previous_block_pct": -15.7,
-      "narrative": "volume is broadly stable; threshold proxy is 169.2 bpm; steady-run fade is mild fade; best matched-route signal is 10.9%."
+      "distance_vs_previous_block_pct": -24.9,
+      "narrative": "volume is down sharply; threshold proxy is 168.6 bpm; steady-run fade is mild fade; best matched-route signal is 10.9%."
     },
     {
       "label": "Last 12 weeks",
       "days": 84,
-      "distance_km": 307.6,
-      "km_per_week": 25.6,
-      "load": 2962.0,
-      "elev_gain_m": 4121.0,
+      "distance_km": 308.8,
+      "km_per_week": 25.7,
+      "load": 2992.0,
+      "elev_gain_m": 4149.0,
       "active_days": 29,
       "distance_vs_previous_block_pct": null,
-      "narrative": "threshold proxy is 169.2 bpm; steady-run fade is mild fade; best matched-route signal is 10.9%."
+      "narrative": "threshold proxy is 168.6 bpm; steady-run fade is mild fade; best matched-route signal is 10.9%."
     }
   ]
 }
