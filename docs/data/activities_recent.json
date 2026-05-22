@@ -1,5 +1,17 @@
 [
   {
+    "date": "2026-05-20",
+    "sport_type": "Run",
+    "distance_km": 17.562,
+    "moving_time_min": 82.667,
+    "pace_min_per_km": 4.707,
+    "elev_gain_m": 245.9,
+    "avg_hr": 150.7,
+    "max_hr": 171.0,
+    "load_trimp": 146.412,
+    "efficiency_factor": 116.534
+  },
+  {
     "date": "2026-05-14",
     "sport_type": "Run",
     "distance_km": 10.237,
@@ -226,17 +238,5 @@
     "max_hr": 179.0,
     "load_trimp": 83.411,
     "efficiency_factor": 51.138
-  },
-  {
-    "date": "2026-03-12",
-    "sport_type": "Run",
-    "distance_km": 21.563,
-    "moving_time_min": 107.767,
-    "pace_min_per_km": 4.998,
-    "elev_gain_m": 372.0,
-    "avg_hr": 155.7,
-    "max_hr": 174.0,
-    "load_trimp": 214.357,
-    "efficiency_factor": 138.492
   }
 ]

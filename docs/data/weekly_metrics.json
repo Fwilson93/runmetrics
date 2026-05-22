@@ -232,5 +232,18 @@
     "efficiency_factor": 63.894,
     "distance_4w_avg": 19.954,
     "load_4w_avg": 184.5
+  },
+  {
+    "date": "2026-05-18",
+    "activities": 1.0,
+    "distance_km": 17.562,
+    "moving_time_min": 82.667,
+    "elev_gain_m": 245.9,
+    "load_trimp": 146.412,
+    "avg_hr": 150.7,
+    "pace_min_per_km": 4.707,
+    "efficiency_factor": 116.534,
+    "distance_4w_avg": 20.655,
+    "load_4w_avg": 186.612
   }
 ]

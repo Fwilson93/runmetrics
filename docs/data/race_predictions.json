@@ -1,19 +1,19 @@
 {
-  "generated_at_utc": "2026-05-14T08:01:14.241106+00:00",
-  "date": "2026-05-14",
+  "generated_at_utc": "2026-05-22T20:37:50.160607+00:00",
+  "date": "2026-05-22",
   "method": "Transparent heuristic. Race order is 5K, 10K, 1/2M, marathon, 50K, 100K. Fitness estimates blend threshold pace proxy with observed activity equivalents. Trend compares current performance with activity-derived equivalents from roughly three months ago. Readiness is separately gated by longest recent run and 28-day volume.",
   "threshold_anchor": {
-    "date": "2026-05-14",
-    "threshold_hr_proxy": 168.6,
-    "threshold_pace_proxy_min_per_km": 4.7,
-    "eligible_windows": 17,
+    "date": "2026-05-20",
+    "threshold_hr_proxy": 168.0,
+    "threshold_pace_proxy_min_per_km": 4.71,
+    "eligible_windows": 18,
     "confidence": "high",
     "z1_upper": 143.0,
     "z2_lower": 143.0,
     "z2_upper": 150.0,
     "z3_upper": 158.0,
-    "z4_upper": 167.0,
-    "z5_lower": 169.0
+    "z4_upper": 166.0,
+    "z5_lower": 168.0
   },
   "items": [
     {
@@ -44,13 +44,13 @@
       "threshold_estimate": {
         "source": "threshold_proxy",
         "distance_km": 5.0,
-        "fast_time_sec": 1269.0,
-        "slow_time_sec": 1340.0,
-        "fast_time": "21:09",
-        "slow_time": "22:20",
+        "fast_time_sec": 1272.0,
+        "slow_time_sec": 1342.0,
+        "fast_time": "21:12",
+        "slow_time": "22:22",
         "pace_range_min_per_km": [
-          4.23,
-          4.46
+          4.24,
+          4.47
         ]
       },
       "observed_equivalents": [
@@ -98,8 +98,8 @@
       "readiness": {
         "verdict": "ready",
         "limiter": "No obvious distance-specific limiter from current public-safe data.",
-        "longest_recent_run_km": 21.6,
-        "last_28d_distance_km": 79.8,
+        "longest_recent_run_km": 21.2,
+        "last_28d_distance_km": 97.4,
         "required_long_run_km": 5.0,
         "required_28d_distance_km": 20.0,
         "runs_over_65pct_distance": 20
@@ -110,7 +110,7 @@
         "message": "Estimate is broadly unchanged versus the previous stored snapshot (0s).",
         "change_sec": 0.0,
         "change_pct": 0.0,
-        "previous_date": "2026-05-12"
+        "previous_date": "2026-05-14"
       },
       "training_focus": {
         "primary": "Improve threshold / speed endurance",
@@ -164,13 +164,13 @@
       "threshold_estimate": {
         "source": "threshold_proxy",
         "distance_km": 10.0,
-        "fast_time_sec": 2679.0,
-        "slow_time_sec": 2820.0,
-        "fast_time": "44:39",
-        "slow_time": "47:00",
+        "fast_time_sec": 2685.0,
+        "slow_time_sec": 2826.0,
+        "fast_time": "44:45",
+        "slow_time": "47:06",
         "pace_range_min_per_km": [
-          4.46,
-          4.7
+          4.47,
+          4.71
         ]
       },
       "observed_equivalents": [
@@ -218,8 +218,8 @@
       "readiness": {
         "verdict": "ready",
         "limiter": "No obvious distance-specific limiter from current public-safe data.",
-        "longest_recent_run_km": 21.6,
-        "last_28d_distance_km": 79.8,
+        "longest_recent_run_km": 21.2,
+        "last_28d_distance_km": 97.4,
         "required_long_run_km": 9.0,
         "required_28d_distance_km": 35.0,
         "runs_over_65pct_distance": 17
@@ -230,7 +230,7 @@
         "message": "Estimate is broadly unchanged versus the previous stored snapshot (0s).",
         "change_sec": 0.0,
         "change_pct": 0.0,
-        "previous_date": "2026-05-12"
+        "previous_date": "2026-05-14"
       },
       "training_focus": {
         "primary": "Improve threshold / speed endurance",
@@ -284,13 +284,13 @@
       "threshold_estimate": {
         "source": "threshold_proxy",
         "distance_km": 21.0975,
-        "fast_time_sec": 6128.0,
-        "slow_time_sec": 6485.0,
-        "fast_time": "1:42:08",
-        "slow_time": "1:48:05",
+        "fast_time_sec": 6141.0,
+        "slow_time_sec": 6499.0,
+        "fast_time": "1:42:21",
+        "slow_time": "1:48:19",
         "pace_range_min_per_km": [
-          4.84,
-          5.12
+          4.85,
+          5.13
         ]
       },
       "observed_equivalents": [
@@ -311,6 +311,14 @@
           "estimated_time": "1:35:36"
         },
         {
+          "date": "2026-05-20",
+          "source_distance_km": 17.56,
+          "source_time_sec": 4960.0,
+          "source_time": "1:22:40",
+          "estimated_time_sec": 6024.0,
+          "estimated_time": "1:40:24"
+        },
+        {
           "date": "2026-05-02",
           "source_distance_km": 14.73,
           "source_time_sec": 4242.0,
@@ -325,21 +333,13 @@
           "source_time": "1:40:41",
           "estimated_time_sec": 6295.0,
           "estimated_time": "1:44:55"
-        },
-        {
-          "date": "2026-03-12",
-          "source_distance_km": 21.56,
-          "source_time_sec": 6466.0,
-          "source_time": "1:47:46",
-          "estimated_time_sec": 6318.0,
-          "estimated_time": "1:45:18"
         }
       ],
       "readiness": {
         "verdict": "ready",
         "limiter": "No obvious distance-specific limiter from current public-safe data.",
-        "longest_recent_run_km": 21.6,
-        "last_28d_distance_km": 79.8,
+        "longest_recent_run_km": 21.2,
+        "last_28d_distance_km": 97.4,
         "required_long_run_km": 16.0,
         "required_28d_distance_km": 70.0,
         "runs_over_65pct_distance": 5
@@ -350,7 +350,7 @@
         "message": "Estimate is broadly unchanged versus the previous stored snapshot (0s).",
         "change_sec": 0.0,
         "change_pct": 0.0,
-        "previous_date": "2026-05-12"
+        "previous_date": "2026-05-14"
       },
       "training_focus": {
         "primary": "Maintain consistency",
@@ -404,13 +404,13 @@
       "threshold_estimate": {
         "source": "threshold_proxy",
         "distance_km": 42.195,
-        "fast_time_sec": 13446.0,
-        "slow_time_sec": 14755.0,
-        "fast_time": "3:44:06",
-        "slow_time": "4:05:55",
+        "fast_time_sec": 13474.0,
+        "slow_time_sec": 14786.0,
+        "fast_time": "3:44:34",
+        "slow_time": "4:06:26",
         "pace_range_min_per_km": [
-          5.31,
-          5.83
+          5.32,
+          5.84
         ]
       },
       "observed_equivalents": [
@@ -421,21 +421,13 @@
           "source_time": "1:34:09",
           "estimated_time_sec": 11712.0,
           "estimated_time": "3:15:12"
-        },
-        {
-          "date": "2026-03-12",
-          "source_distance_km": 21.56,
-          "source_time_sec": 6466.0,
-          "source_time": "1:47:46",
-          "estimated_time_sec": 13173.0,
-          "estimated_time": "3:39:33"
         }
       ],
       "readiness": {
         "verdict": "plausible but durability-limited",
         "limiter": "Fitness may exist, but recent long-run or 28-day volume is below the configured readiness guardrail.",
-        "longest_recent_run_km": 21.6,
-        "last_28d_distance_km": 79.8,
+        "longest_recent_run_km": 21.2,
+        "last_28d_distance_km": 97.4,
         "required_long_run_km": 28.0,
         "required_28d_distance_km": 150.0,
         "runs_over_65pct_distance": 0
@@ -446,11 +438,11 @@
         "message": "Estimate is broadly unchanged versus the previous stored snapshot (0s).",
         "change_sec": 0.0,
         "change_pct": 0.0,
-        "previous_date": "2026-05-12"
+        "previous_date": "2026-05-14"
       },
       "training_focus": {
         "primary": "Build distance-specific durability",
-        "rationale": "Readiness is plausible but durability-limited. Longest recent run is 21.6 km versus a guardrail of 28.0 km; 28-day volume is 79.8 km versus 150.0 km.",
+        "rationale": "Readiness is plausible but durability-limited. Longest recent run is 21.2 km versus a guardrail of 28.0 km; 28-day volume is 97.4 km versus 150.0 km.",
         "training_emphasis": "Prioritise consistent easy volume and gradually extending the long run before relying on the predicted time."
       },
       "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate."
@@ -461,10 +453,10 @@
       "distance_km": 50.0,
       "fitness_estimate": {
         "distance_km": 50.0,
-        "fast_time_sec": 17202.0,
-        "slow_time_sec": 19740.0,
-        "fast_time": "4:46:42",
-        "slow_time": "5:29:00",
+        "fast_time_sec": 17239.0,
+        "slow_time_sec": 19782.0,
+        "fast_time": "4:47:19",
+        "slow_time": "5:29:42",
         "sources": [
           "threshold_proxy_fast",
           "threshold_proxy_slow"
@@ -475,21 +467,21 @@
       "threshold_estimate": {
         "source": "threshold_proxy",
         "distance_km": 50.0,
-        "fast_time_sec": 17202.0,
-        "slow_time_sec": 19740.0,
-        "fast_time": "4:46:42",
-        "slow_time": "5:29:00",
+        "fast_time_sec": 17239.0,
+        "slow_time_sec": 19782.0,
+        "fast_time": "4:47:19",
+        "slow_time": "5:29:42",
         "pace_range_min_per_km": [
-          5.73,
-          6.58
+          5.75,
+          6.59
         ]
       },
       "observed_equivalents": [],
       "readiness": {
         "verdict": "plausible but durability-limited",
         "limiter": "Fitness may exist, but recent long-run or 28-day volume is below the configured readiness guardrail.",
-        "longest_recent_run_km": 21.6,
-        "last_28d_distance_km": 79.8,
+        "longest_recent_run_km": 21.2,
+        "last_28d_distance_km": 97.4,
         "required_long_run_km": 35.0,
         "required_28d_distance_km": 180.0,
         "runs_over_65pct_distance": 0
@@ -497,14 +489,14 @@
       "confidence": "low",
       "trend": {
         "label": "stable",
-        "message": "Estimate is broadly unchanged versus the previous stored snapshot (-40s).",
-        "change_sec": -40.0,
-        "change_pct": -0.2,
-        "previous_date": "2026-05-12"
+        "message": "Estimate is broadly unchanged versus the previous stored snapshot (+40s).",
+        "change_sec": 40.0,
+        "change_pct": 0.2,
+        "previous_date": "2026-05-14"
       },
       "training_focus": {
         "primary": "Build distance-specific durability",
-        "rationale": "Readiness is plausible but durability-limited. Longest recent run is 21.6 km versus a guardrail of 35.0 km; 28-day volume is 79.8 km versus 180.0 km.",
+        "rationale": "Readiness is plausible but durability-limited. Longest recent run is 21.2 km versus a guardrail of 35.0 km; 28-day volume is 97.4 km versus 180.0 km.",
         "training_emphasis": "Prioritise consistent easy volume and gradually extending the long run before relying on the predicted time."
       },
       "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate."
@@ -515,10 +507,10 @@
       "distance_km": 100.0,
       "fitness_estimate": {
         "distance_km": 100.0,
-        "fast_time_sec": 40890.0,
-        "slow_time_sec": 52170.0,
-        "fast_time": "11:21:30",
-        "slow_time": "14:29:30",
+        "fast_time_sec": 40977.0,
+        "slow_time_sec": 52281.0,
+        "fast_time": "11:22:57",
+        "slow_time": "14:31:21",
         "sources": [
           "threshold_proxy_fast",
           "threshold_proxy_slow"
@@ -529,21 +521,21 @@
       "threshold_estimate": {
         "source": "threshold_proxy",
         "distance_km": 100.0,
-        "fast_time_sec": 40890.0,
-        "slow_time_sec": 52170.0,
-        "fast_time": "11:21:30",
-        "slow_time": "14:29:30",
+        "fast_time_sec": 40977.0,
+        "slow_time_sec": 52281.0,
+        "fast_time": "11:22:57",
+        "slow_time": "14:31:21",
         "pace_range_min_per_km": [
-          6.82,
-          8.7
+          6.83,
+          8.71
         ]
       },
       "observed_equivalents": [],
       "readiness": {
         "verdict": "not distance-ready",
         "limiter": "Current data does not show enough distance-specific preparation; you probably should not trust the fitness estimate for this distance yet.",
-        "longest_recent_run_km": 21.6,
-        "last_28d_distance_km": 79.8,
+        "longest_recent_run_km": 21.2,
+        "last_28d_distance_km": 97.4,
         "required_long_run_km": 50.0,
         "required_28d_distance_km": 260.0,
         "runs_over_65pct_distance": 0
@@ -551,26 +543,26 @@
       "confidence": "low",
       "trend": {
         "label": "stable",
-        "message": "Estimate is broadly unchanged versus the previous stored snapshot (-1:39).",
-        "change_sec": -99.0,
-        "change_pct": -0.2,
-        "previous_date": "2026-05-12"
+        "message": "Estimate is broadly unchanged versus the previous stored snapshot (+1:39).",
+        "change_sec": 99.0,
+        "change_pct": 0.2,
+        "previous_date": "2026-05-14"
       },
       "training_focus": {
         "primary": "Build distance-specific durability",
-        "rationale": "Readiness is not distance-ready. Longest recent run is 21.6 km versus a guardrail of 50.0 km; 28-day volume is 79.8 km versus 260.0 km.",
+        "rationale": "Readiness is not distance-ready. Longest recent run is 21.2 km versus a guardrail of 50.0 km; 28-day volume is 97.4 km versus 260.0 km.",
         "training_emphasis": "Prioritise consistent easy volume and gradually extending the long run before relying on the predicted time."
       },
       "interpretation": "Fitness estimate blends threshold proxy and recent observed activity equivalents; trend compares current estimate with a roughly three-month-old performance window; readiness is separate."
     }
   ],
   "anchoring": {
-    "generated_at_utc": "2026-05-14T08:01:14Z",
+    "generated_at_utc": "2026-05-22T20:37:50Z",
     "source": "docs/data/best_efforts.json",
     "rule": "Displayed anchored prediction is min(model prediction, observed rolling best effort) for matching distance.",
     "anchored_count": 0
   },
   "trend_method": "Trend compares the midpoint of today's estimated range with the previous stored snapshot for the same race. Negative time change means faster/improving.",
   "training_focus_method": "Training focus is rule-based from readiness, long-run exposure, 28-day volume, fade, run-type balance and easy-efficiency trend.",
-  "enhanced_at_utc": "2026-05-14T08:01:16.442646+00:00"
+  "enhanced_at_utc": "2026-05-22T20:37:50.568349+00:00"
 }

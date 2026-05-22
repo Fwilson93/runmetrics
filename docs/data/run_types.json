@@ -1,16 +1,16 @@
 {
-  "generated_at_utc": "2026-05-14T08:01:12.077328+00:00",
+  "generated_at_utc": "2026-05-22T20:37:49.782287+00:00",
   "method": "Public-safe deterministic run classification from distance, duration, elevation, HR relative to threshold proxy, and sport type. No activity IDs, names, routes or GPS are exported.",
   "items": [
     {
       "type": "threshold-ish",
-      "count": 9,
-      "pct": 45.0
+      "count": 10,
+      "pct": 50.0
     },
     {
       "type": "steady",
-      "count": 6,
-      "pct": 30.0
+      "count": 5,
+      "pct": 25.0
     },
     {
       "type": "long",
@@ -26,13 +26,13 @@
   "recent_28_run_items": [
     {
       "type": "threshold-ish",
-      "count": 9,
-      "pct": 45.0
+      "count": 10,
+      "pct": 50.0
     },
     {
       "type": "steady",
-      "count": 6,
-      "pct": 30.0
+      "count": 5,
+      "pct": 25.0
     },
     {
       "type": "long",
@@ -45,9 +45,24 @@
       "pct": 5.0
     }
   ],
-  "recent_28_hard_count": 10,
+  "recent_28_hard_count": 11,
   "recent_28_easy_or_long_count": 4,
   "classified_runs": [
+    {
+      "date": "2026-05-20",
+      "type": "long",
+      "labels": [
+        "long"
+      ],
+      "distance_km": 17.56,
+      "duration_min": 82.7,
+      "elev_gain_m": 246.0,
+      "elev_per_km": 14.0,
+      "avg_hr": 150.7,
+      "hr_ratio_to_threshold": 0.897,
+      "pace_min_per_km": 4.71,
+      "efficiency_kmh_per_bpm": 0.0846
+    },
     {
       "date": "2026-05-14",
       "type": "threshold-ish",
@@ -59,7 +74,7 @@
       "elev_gain_m": 148.0,
       "elev_per_km": 14.4,
       "avg_hr": 158.1,
-      "hr_ratio_to_threshold": 0.938,
+      "hr_ratio_to_threshold": 0.941,
       "pace_min_per_km": 4.57,
       "efficiency_kmh_per_bpm": 0.0831
     },
@@ -74,7 +89,7 @@
       "elev_gain_m": 148.0,
       "elev_per_km": 14.6,
       "avg_hr": 160.9,
-      "hr_ratio_to_threshold": 0.954,
+      "hr_ratio_to_threshold": 0.958,
       "pace_min_per_km": 4.43,
       "efficiency_kmh_per_bpm": 0.0842
     },
@@ -89,7 +104,7 @@
       "elev_gain_m": 148.0,
       "elev_per_km": 14.5,
       "avg_hr": 150.2,
-      "hr_ratio_to_threshold": 0.891,
+      "hr_ratio_to_threshold": 0.894,
       "pace_min_per_km": 4.55,
       "efficiency_kmh_per_bpm": 0.0877
     },
@@ -105,7 +120,7 @@
       "elev_gain_m": 242.0,
       "elev_per_km": 16.4,
       "avg_hr": 156.2,
-      "hr_ratio_to_threshold": 0.926,
+      "hr_ratio_to_threshold": 0.93,
       "pace_min_per_km": 4.8,
       "efficiency_kmh_per_bpm": 0.08
     },
@@ -120,7 +135,7 @@
       "elev_gain_m": 148.0,
       "elev_per_km": 14.1,
       "avg_hr": 155.9,
-      "hr_ratio_to_threshold": 0.925,
+      "hr_ratio_to_threshold": 0.928,
       "pace_min_per_km": 4.52,
       "efficiency_kmh_per_bpm": 0.0851
     },
@@ -135,7 +150,7 @@
       "elev_gain_m": 127.0,
       "elev_per_km": 13.7,
       "avg_hr": 155.2,
-      "hr_ratio_to_threshold": 0.921,
+      "hr_ratio_to_threshold": 0.924,
       "pace_min_per_km": 4.56,
       "efficiency_kmh_per_bpm": 0.0848
     },
@@ -151,7 +166,7 @@
       "elev_gain_m": 179.0,
       "elev_per_km": 19.1,
       "avg_hr": 158.8,
-      "hr_ratio_to_threshold": 0.942,
+      "hr_ratio_to_threshold": 0.945,
       "pace_min_per_km": 4.8,
       "efficiency_kmh_per_bpm": 0.0788
     },
@@ -166,7 +181,7 @@
       "elev_gain_m": 79.0,
       "elev_per_km": 14.6,
       "avg_hr": 150.0,
-      "hr_ratio_to_threshold": 0.89,
+      "hr_ratio_to_threshold": 0.893,
       "pace_min_per_km": 4.48,
       "efficiency_kmh_per_bpm": 0.0892
     },
@@ -181,7 +196,7 @@
       "elev_gain_m": 64.0,
       "elev_per_km": 13.6,
       "avg_hr": 145.5,
-      "hr_ratio_to_threshold": 0.863,
+      "hr_ratio_to_threshold": 0.866,
       "pace_min_per_km": 4.78,
       "efficiency_kmh_per_bpm": 0.0863
     },
@@ -196,7 +211,7 @@
       "elev_gain_m": 40.0,
       "elev_per_km": 1.9,
       "avg_hr": 166.3,
-      "hr_ratio_to_threshold": 0.986,
+      "hr_ratio_to_threshold": 0.99,
       "pace_min_per_km": 4.44,
       "efficiency_kmh_per_bpm": 0.0813
     },
@@ -211,7 +226,7 @@
       "elev_gain_m": 14.0,
       "elev_per_km": 2.4,
       "avg_hr": 166.2,
-      "hr_ratio_to_threshold": 0.986,
+      "hr_ratio_to_threshold": 0.989,
       "pace_min_per_km": 4.17,
       "efficiency_kmh_per_bpm": 0.0865
     },
@@ -226,7 +241,7 @@
       "elev_gain_m": 206.0,
       "elev_per_km": 17.0,
       "avg_hr": 155.9,
-      "hr_ratio_to_threshold": 0.925,
+      "hr_ratio_to_threshold": 0.928,
       "pace_min_per_km": 4.78,
       "efficiency_kmh_per_bpm": 0.0805
     },
@@ -241,7 +256,7 @@
       "elev_gain_m": 113.0,
       "elev_per_km": 13.9,
       "avg_hr": 145.8,
-      "hr_ratio_to_threshold": 0.865,
+      "hr_ratio_to_threshold": 0.868,
       "pace_min_per_km": 4.96,
       "efficiency_kmh_per_bpm": 0.083
     },
@@ -256,7 +271,7 @@
       "elev_gain_m": 301.0,
       "elev_per_km": 34.5,
       "avg_hr": 141.9,
-      "hr_ratio_to_threshold": 0.842,
+      "hr_ratio_to_threshold": 0.845,
       "pace_min_per_km": 6.38,
       "efficiency_kmh_per_bpm": 0.0663
     },
@@ -271,7 +286,7 @@
       "elev_gain_m": 68.0,
       "elev_per_km": 4.1,
       "avg_hr": 166.9,
-      "hr_ratio_to_threshold": 0.99,
+      "hr_ratio_to_threshold": 0.993,
       "pace_min_per_km": 4.46,
       "efficiency_kmh_per_bpm": 0.0805
     },
@@ -286,7 +301,7 @@
       "elev_gain_m": 122.0,
       "elev_per_km": 13.5,
       "avg_hr": 158.1,
-      "hr_ratio_to_threshold": 0.938,
+      "hr_ratio_to_threshold": 0.941,
       "pace_min_per_km": 4.62,
       "efficiency_kmh_per_bpm": 0.0822
     },
@@ -301,22 +316,22 @@
       "elev_gain_m": 315.0,
       "elev_per_km": 15.5,
       "avg_hr": 150.1,
-      "hr_ratio_to_threshold": 0.89,
+      "hr_ratio_to_threshold": 0.893,
       "pace_min_per_km": 4.96,
       "efficiency_kmh_per_bpm": 0.0806
     },
     {
       "date": "2026-03-17",
-      "type": "steady",
+      "type": "threshold-ish",
       "labels": [
-        "steady"
+        "threshold-ish"
       ],
       "distance_km": 9.09,
       "duration_min": 44.5,
       "elev_gain_m": 126.0,
       "elev_per_km": 13.9,
       "avg_hr": 155.0,
-      "hr_ratio_to_threshold": 0.919,
+      "hr_ratio_to_threshold": 0.923,
       "pace_min_per_km": 4.9,
       "efficiency_kmh_per_bpm": 0.0791
     },
@@ -331,24 +346,9 @@
       "elev_gain_m": 77.0,
       "elev_per_km": 9.4,
       "avg_hr": 160.1,
-      "hr_ratio_to_threshold": 0.95,
+      "hr_ratio_to_threshold": 0.953,
       "pace_min_per_km": 4.63,
       "efficiency_kmh_per_bpm": 0.0809
-    },
-    {
-      "date": "2026-03-12",
-      "type": "long",
-      "labels": [
-        "long"
-      ],
-      "distance_km": 21.56,
-      "duration_min": 107.8,
-      "elev_gain_m": 372.0,
-      "elev_per_km": 17.3,
-      "avg_hr": 155.7,
-      "hr_ratio_to_threshold": 0.923,
-      "pace_min_per_km": 5.0,
-      "efficiency_kmh_per_bpm": 0.0771
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
-  "label": "mild fade",
-  "recent_mean_efficiency_change_pct": -3.4,
-  "message": "Recent steady runs show mild fade. This is common, but worth watching.",
+  "label": "noticeable fade",
+  "recent_mean_efficiency_change_pct": -5.6,
+  "message": "Recent steady runs show noticeable fade. Fatigue, hills, heat, fuelling or sensor noise may be contributing.",
   "plain_english": "This checks whether you get less speed for the same heartbeat in the second half of steady runs. Closer to 0% is better; strongly negative means you faded."
 }

@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-14T08:01:12.079043+00:00",
+  "generated_at_utc": "2026-05-22T20:37:49.782753+00:00",
   "method": "Easy/steady efficiency = speed_kmh divided by average HR for non-hilly recovery/easy/steady runs. Higher means more speed per heartbeat.",
   "verdict": "not enough data",
   "recent_vs_previous_efficiency_pct": null,
@@ -42,14 +42,6 @@
       "rolling_efficiency_kmh_per_bpm": 0.0825,
       "rolling_pace_min_per_km": 5.03,
       "rolling_avg_hr": 146.7,
-      "type": "steady"
-    },
-    {
-      "date": "2026-03-17",
-      "efficiency_kmh_per_bpm": 0.0791,
-      "rolling_efficiency_kmh_per_bpm": 0.0819,
-      "rolling_pace_min_per_km": 5.01,
-      "rolling_avg_hr": 148.1,
       "type": "steady"
     }
   ]
