@@ -1,38 +1,38 @@
 {
-  "generated_at_utc": "2026-05-22T20:37:49.783148+00:00",
+  "generated_at_utc": "2026-05-23T20:02:47.957157+00:00",
   "items": [
     {
       "label": "Last 4 weeks",
       "days": 28,
-      "distance_km": 97.4,
-      "km_per_week": 24.3,
-      "load": 884.0,
-      "elev_gain_m": 1465.0,
-      "active_days": 9,
-      "distance_vs_previous_block_pct": 25.8,
-      "narrative": "volume is up sharply; threshold proxy is 168.0 bpm; steady-run fade is noticeable fade; best matched-route signal is 10.9%."
+      "distance_km": 94.7,
+      "km_per_week": 23.7,
+      "load": 862.0,
+      "elev_gain_m": 1386.0,
+      "active_days": 8,
+      "distance_vs_previous_block_pct": 25.2,
+      "narrative": "volume is up sharply; threshold proxy is 168.3 bpm; steady-run fade is noticeable fade; best matched-route signal is 10.9%."
     },
     {
       "label": "Last 8 weeks",
       "days": 56,
-      "distance_km": 174.8,
-      "km_per_week": 21.8,
-      "load": 1668.0,
-      "elev_gain_m": 2271.0,
+      "distance_km": 170.4,
+      "km_per_week": 21.3,
+      "load": 1595.0,
+      "elev_gain_m": 2382.0,
       "active_days": 16,
-      "distance_vs_previous_block_pct": -19.6,
-      "narrative": "volume is broadly stable; threshold proxy is 168.0 bpm; steady-run fade is noticeable fade; best matched-route signal is 10.9%."
+      "distance_vs_previous_block_pct": -24.9,
+      "narrative": "volume is down sharply; threshold proxy is 168.3 bpm; steady-run fade is noticeable fade; best matched-route signal is 10.9%."
     },
     {
       "label": "Last 12 weeks",
       "days": 84,
-      "distance_km": 297.7,
-      "km_per_week": 24.8,
-      "load": 2865.0,
-      "elev_gain_m": 3981.0,
+      "distance_km": 294.7,
+      "km_per_week": 24.6,
+      "load": 2823.0,
+      "elev_gain_m": 3934.0,
       "active_days": 27,
       "distance_vs_previous_block_pct": null,
-      "narrative": "threshold proxy is 168.0 bpm; steady-run fade is noticeable fade; best matched-route signal is 10.9%."
+      "narrative": "threshold proxy is 168.3 bpm; steady-run fade is noticeable fade; best matched-route signal is 10.9%."
     }
   ]
 }
