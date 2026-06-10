@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-23T20:02:47.957236+00:00",
+  "generated_at_utc": "2026-06-10T07:04:25.591697+00:00",
   "items": [
     {
       "label": "Longest public-window day",
@@ -21,7 +21,7 @@
     },
     {
       "label": "Hard-ish runs in latest 28 classified runs",
-      "value": 11
+      "value": 13
     }
   ]
 }

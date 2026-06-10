@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-23T20:02:45.760105+00:00",
+  "generated_at_utc": "2026-06-10T07:04:23.227771+00:00",
   "method": "Compares speed-per-heartbeat in first vs second half of moving stream data for runs >=35 min. Negative efficiency_change_pct can indicate HR drift/decoupling, but route, heat, fatigue and sensor quality matter.",
   "items": [
     {
@@ -353,6 +353,61 @@
       "grade_abs_mean": 3.2,
       "confidence": "high",
       "date": "2026-05-23"
+    },
+    {
+      "duration_min": 50.9,
+      "first_half_hr": 145.1,
+      "second_half_hr": 160.6,
+      "hr_rise_bpm": 15.5,
+      "speed_change_pct": -5.4,
+      "efficiency_change_pct": -14.5,
+      "grade_abs_mean": 3.15,
+      "confidence": "high",
+      "date": "2026-05-26"
+    },
+    {
+      "duration_min": 45.8,
+      "first_half_hr": 158.8,
+      "second_half_hr": 165.9,
+      "hr_rise_bpm": 7.1,
+      "speed_change_pct": -2.7,
+      "efficiency_change_pct": -6.8,
+      "grade_abs_mean": 1.14,
+      "confidence": "high",
+      "date": "2026-05-31"
+    },
+    {
+      "duration_min": 47.2,
+      "first_half_hr": 151.2,
+      "second_half_hr": 164.4,
+      "hr_rise_bpm": 13.2,
+      "speed_change_pct": 8.0,
+      "efficiency_change_pct": -0.7,
+      "grade_abs_mean": 1.03,
+      "confidence": "high",
+      "date": "2026-06-02"
+    },
+    {
+      "duration_min": 61.5,
+      "first_half_hr": 150.7,
+      "second_half_hr": 160.5,
+      "hr_rise_bpm": 9.8,
+      "speed_change_pct": -24.3,
+      "efficiency_change_pct": -29.0,
+      "grade_abs_mean": 5.83,
+      "confidence": "medium",
+      "date": "2026-06-05"
+    },
+    {
+      "duration_min": 45.4,
+      "first_half_hr": 153.4,
+      "second_half_hr": 163.7,
+      "hr_rise_bpm": 10.3,
+      "speed_change_pct": -4.8,
+      "efficiency_change_pct": -10.8,
+      "grade_abs_mean": 3.1,
+      "confidence": "high",
+      "date": "2026-06-09"
     }
   ]
 }

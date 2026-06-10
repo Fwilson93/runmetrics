@@ -1,17 +1,17 @@
 {
-  "generated_at_utc": "2026-05-23T20:02:45.760094+00:00",
+  "generated_at_utc": "2026-06-10T07:04:23.227761+00:00",
   "latest": {
-    "date": "2026-05-23",
-    "threshold_hr_proxy": 168.3,
-    "threshold_pace_proxy_min_per_km": 4.73,
-    "eligible_windows": 19,
+    "date": "2026-06-09",
+    "threshold_hr_proxy": 167.0,
+    "threshold_pace_proxy_min_per_km": 4.68,
+    "eligible_windows": 24,
     "confidence": "high",
-    "z1_upper": 143.0,
-    "z2_lower": 143.0,
-    "z2_upper": 150.0,
-    "z3_upper": 158.0,
-    "z4_upper": 167.0,
-    "z5_lower": 168.0
+    "z1_upper": 142.0,
+    "z2_lower": 142.0,
+    "z2_upper": 149.0,
+    "z3_upper": 157.0,
+    "z4_upper": 165.0,
+    "z5_lower": 167.0
   },
   "method": "Proxy estimate from local streams using filtered 20-minute moving HR/speed windows; rolling 90-day 85th percentile of candidate mean HR. Not a lab lactate-threshold or ventilatory-threshold measurement.",
   "zone_model": "Threshold-derived bands: Z1 <85%, Z2 85-89%, Z3 90-94%, Z4 95-99%, Z5 >=100% of threshold_hr_proxy.",
@@ -160,17 +160,43 @@
       "z5_lower": 168.0
     },
     {
-      "date": "2026-05-23",
-      "threshold_hr_proxy": 168.3,
-      "threshold_pace_proxy_min_per_km": 4.73,
-      "eligible_windows": 19,
+      "date": "2026-05-28",
+      "threshold_hr_proxy": 167.9,
+      "threshold_pace_proxy_min_per_km": 4.74,
+      "eligible_windows": 20,
       "confidence": "high",
       "z1_upper": 143.0,
       "z2_lower": 143.0,
-      "z2_upper": 150.0,
+      "z2_upper": 149.0,
       "z3_upper": 158.0,
-      "z4_upper": 167.0,
+      "z4_upper": 166.0,
       "z5_lower": 168.0
+    },
+    {
+      "date": "2026-06-04",
+      "threshold_hr_proxy": 167.3,
+      "threshold_pace_proxy_min_per_km": 4.71,
+      "eligible_windows": 22,
+      "confidence": "high",
+      "z1_upper": 142.0,
+      "z2_lower": 142.0,
+      "z2_upper": 149.0,
+      "z3_upper": 157.0,
+      "z4_upper": 166.0,
+      "z5_lower": 167.0
+    },
+    {
+      "date": "2026-06-09",
+      "threshold_hr_proxy": 167.0,
+      "threshold_pace_proxy_min_per_km": 4.68,
+      "eligible_windows": 24,
+      "confidence": "high",
+      "z1_upper": 142.0,
+      "z2_lower": 142.0,
+      "z2_upper": 149.0,
+      "z3_upper": 157.0,
+      "z4_upper": 165.0,
+      "z5_lower": 167.0
     }
   ]
 }

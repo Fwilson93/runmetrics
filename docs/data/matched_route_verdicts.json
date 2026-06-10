@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-23T20:02:47.956601+00:00",
+  "generated_at_utc": "2026-06-10T07:04:25.591158+00:00",
   "method": "Matched-route verdicts are efficiency-led: faster alone is not enough; the question is whether speed per heartbeat improved.",
   "best_signal": {
     "label": "GPS matched route 1",
@@ -13,6 +13,16 @@
   },
   "items": [
     {
+      "label": "GPS matched route 7",
+      "count": 6,
+      "latest_date": "2026-06-09",
+      "efficiency_change_pct": 3.3,
+      "pace_change_pct": -4.5,
+      "hr_change_pct": 1.7,
+      "verdict": "probably fitter",
+      "why": "More speed per heartbeat than your previous median on this GPS-matched route."
+    },
+    {
       "label": "GPS matched route 5",
       "count": 6,
       "latest_date": "2026-04-28",
@@ -21,16 +31,6 @@
       "hr_change_pct": 0.1,
       "verdict": "probably fitter",
       "why": "More speed per heartbeat than your previous median on this GPS-matched route."
-    },
-    {
-      "label": "GPS matched route 7",
-      "count": 4,
-      "latest_date": "2026-05-14",
-      "efficiency_change_pct": -2.3,
-      "pace_change_pct": 1.0,
-      "hr_change_pct": 1.4,
-      "verdict": "similar fitness signal",
-      "why": "Efficiency is close to your previous median."
     },
     {
       "label": "GPS matched route 3",

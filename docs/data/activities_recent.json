@@ -1,5 +1,65 @@
 [
   {
+    "date": "2026-06-09",
+    "sport_type": "Run",
+    "distance_km": 10.451,
+    "moving_time_min": 45.45,
+    "pace_min_per_km": 4.349,
+    "elev_gain_m": 149.5,
+    "avg_hr": 158.5,
+    "max_hr": 177.0,
+    "load_trimp": 96.379,
+    "efficiency_factor": 65.936
+  },
+  {
+    "date": "2026-06-05",
+    "sport_type": "Run",
+    "distance_km": 11.42,
+    "moving_time_min": 58.2,
+    "pace_min_per_km": 5.096,
+    "elev_gain_m": 279.3,
+    "avg_hr": 155.1,
+    "max_hr": 177.0,
+    "load_trimp": 114.177,
+    "efficiency_factor": 73.629
+  },
+  {
+    "date": "2026-06-02",
+    "sport_type": "Run",
+    "distance_km": 10.827,
+    "moving_time_min": 47.083,
+    "pace_min_per_km": 4.349,
+    "elev_gain_m": 43.4,
+    "avg_hr": 157.7,
+    "max_hr": 173.0,
+    "load_trimp": 98.04,
+    "efficiency_factor": 68.656
+  },
+  {
+    "date": "2026-05-31",
+    "sport_type": "Run",
+    "distance_km": 10.349,
+    "moving_time_min": 45.8,
+    "pace_min_per_km": 4.426,
+    "elev_gain_m": 46.6,
+    "avg_hr": 162.4,
+    "max_hr": 175.0,
+    "load_trimp": 106.06,
+    "efficiency_factor": 63.726
+  },
+  {
+    "date": "2026-05-26",
+    "sport_type": "Run",
+    "distance_km": 10.273,
+    "moving_time_min": 49.95,
+    "pace_min_per_km": 4.862,
+    "elev_gain_m": 148.2,
+    "avg_hr": 152.6,
+    "max_hr": 169.0,
+    "load_trimp": 92.482,
+    "efficiency_factor": 67.322
+  },
+  {
     "date": "2026-05-23",
     "sport_type": "Run",
     "distance_km": 12.114,
@@ -178,65 +238,5 @@
     "max_hr": 163.0,
     "load_trimp": 63.602,
     "efficiency_factor": 55.823
-  },
-  {
-    "date": "2026-03-29",
-    "sport_type": "Run",
-    "distance_km": 8.709,
-    "moving_time_min": 55.583,
-    "pace_min_per_km": 6.382,
-    "elev_gain_m": 300.8,
-    "avg_hr": 141.9,
-    "max_hr": 176.0,
-    "load_trimp": 79.763,
-    "efficiency_factor": 61.375
-  },
-  {
-    "date": "2026-03-26",
-    "sport_type": "Run",
-    "distance_km": 16.503,
-    "moving_time_min": 73.683,
-    "pace_min_per_km": 4.465,
-    "elev_gain_m": 67.5,
-    "avg_hr": 166.9,
-    "max_hr": 175.0,
-    "load_trimp": 188.595,
-    "efficiency_factor": 98.88
-  },
-  {
-    "date": "2026-03-24",
-    "sport_type": "Run",
-    "distance_km": 9.053,
-    "moving_time_min": 41.8,
-    "pace_min_per_km": 4.617,
-    "elev_gain_m": 122.2,
-    "avg_hr": 158.1,
-    "max_hr": 174.0,
-    "load_trimp": 87.836,
-    "efficiency_factor": 57.261
-  },
-  {
-    "date": "2026-03-19",
-    "sport_type": "Run",
-    "distance_km": 20.294,
-    "moving_time_min": 100.683,
-    "pace_min_per_km": 4.961,
-    "elev_gain_m": 314.9,
-    "avg_hr": 150.1,
-    "max_hr": 168.0,
-    "load_trimp": 175.827,
-    "efficiency_factor": 135.201
-  },
-  {
-    "date": "2026-03-17",
-    "sport_type": "Run",
-    "distance_km": 9.089,
-    "moving_time_min": 44.5,
-    "pace_min_per_km": 4.896,
-    "elev_gain_m": 126.2,
-    "avg_hr": 155.0,
-    "max_hr": 170.0,
-    "load_trimp": 87.1,
-    "efficiency_factor": 58.639
   }
 ]
