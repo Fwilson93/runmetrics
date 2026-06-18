@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-06-10T07:04:25.591697+00:00",
+  "generated_at_utc": "2026-06-18T15:24:54.989524+00:00",
   "items": [
     {
       "label": "Longest public-window day",
@@ -11,8 +11,8 @@
     },
     {
       "label": "Best matched-route efficiency signal",
-      "value": "10.9%",
-      "context": "GPS matched route 1"
+      "value": "11.5%",
+      "context": "GPS matched route 6"
     },
     {
       "label": "Best easy/steady efficiency",
@@ -21,7 +21,7 @@
     },
     {
       "label": "Hard-ish runs in latest 28 classified runs",
-      "value": 13
+      "value": 12
     }
   ]
 }

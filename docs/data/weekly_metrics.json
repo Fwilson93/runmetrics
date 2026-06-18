@@ -274,15 +274,28 @@
   },
   {
     "date": "2026-06-08",
+    "activities": 2.0,
+    "distance_km": 31.417,
+    "moving_time_min": 149.667,
+    "elev_gain_m": 483.2,
+    "load_trimp": 336.637,
+    "avg_hr": 160.35,
+    "pace_min_per_km": 4.66,
+    "efficiency_factor": 97.599,
+    "distance_4w_avg": 25.991,
+    "load_4w_avg": 252.304
+  },
+  {
+    "date": "2026-06-15",
     "activities": 1.0,
-    "distance_km": 10.451,
-    "moving_time_min": 45.45,
-    "elev_gain_m": 149.5,
-    "load_trimp": 96.379,
-    "avg_hr": 158.5,
-    "pace_min_per_km": 4.349,
-    "efficiency_factor": 65.936,
-    "distance_4w_avg": 20.749,
-    "load_4w_avg": 192.24
+    "distance_km": 12.092,
+    "moving_time_min": 60.033,
+    "elev_gain_m": 176.4,
+    "load_trimp": 84.48,
+    "avg_hr": 141.1,
+    "pace_min_per_km": 4.965,
+    "efficiency_factor": 85.695,
+    "distance_4w_avg": 21.594,
+    "load_4w_avg": 207.969
   }
 ]

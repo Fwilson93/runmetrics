@@ -1,19 +1,26 @@
 {
-  "generated_at_utc": "2026-06-10T07:04:25.986715+00:00",
+  "generated_at_utc": "2026-06-18T15:24:55.625585+00:00",
   "method": "Rule-based priorities from public-safe load, run-type, efficiency, matched-route and steady-run fade summaries.",
   "items": [
     {
       "rank": 1,
-      "area": "Steady-run fade",
-      "status": "weak point",
-      "message": "Recent steady-run fade averages -12.3%, suggesting durability/fatigue may be limiting longer efforts.",
-      "suggestion": "Use easy endurance runs and fuelling/hydration practice before adding much intensity."
+      "area": "Load management",
+      "status": "caution",
+      "message": "Load signals suggest caution: TSB -16.3, ACWR 1.19.",
+      "suggestion": "Prioritise consolidation and easy running over adding another hard session."
     },
     {
       "rank": 2,
+      "area": "Steady-run fade",
+      "status": "weak point",
+      "message": "Recent steady-run fade averages -9.7%, suggesting durability/fatigue may be limiting longer efforts.",
+      "suggestion": "Use easy endurance runs and fuelling/hydration practice before adding much intensity."
+    },
+    {
+      "rank": 3,
       "area": "Hard/easy balance",
       "status": "watch",
-      "message": "There are 13 hard-ish classified runs in the latest 28 classified runs.",
+      "message": "There are 12 hard-ish classified runs in the latest 28 classified runs.",
       "suggestion": "Make sure easy volume is not drifting into moderate effort too often."
     }
   ]

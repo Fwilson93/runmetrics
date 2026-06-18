@@ -1,19 +1,19 @@
 {
-  "generated_at_utc": "2026-06-10T07:04:25.591158+00:00",
+  "generated_at_utc": "2026-06-18T15:24:54.989103+00:00",
   "method": "Matched-route verdicts are efficiency-led: faster alone is not enough; the question is whether speed per heartbeat improved.",
   "best_signal": {
-    "label": "GPS matched route 1",
+    "label": "GPS matched route 6",
     "count": 2,
-    "latest_date": "2026-02-17",
-    "efficiency_change_pct": 10.9,
-    "pace_change_pct": -12.4,
-    "hr_change_pct": 2.9,
+    "latest_date": "2026-06-16",
+    "efficiency_change_pct": 11.5,
+    "pace_change_pct": 2.7,
+    "hr_change_pct": -12.6,
     "verdict": "probably fitter",
     "why": "More speed per heartbeat than your previous median on this GPS-matched route."
   },
   "items": [
     {
-      "label": "GPS matched route 7",
+      "label": "GPS matched route 8",
       "count": 6,
       "latest_date": "2026-06-09",
       "efficiency_change_pct": 3.3,
@@ -44,6 +44,16 @@
     },
     {
       "label": "GPS matched route 6",
+      "count": 2,
+      "latest_date": "2026-06-16",
+      "efficiency_change_pct": 11.5,
+      "pace_change_pct": 2.7,
+      "hr_change_pct": -12.6,
+      "verdict": "probably fitter",
+      "why": "More speed per heartbeat than your previous median on this GPS-matched route."
+    },
+    {
+      "label": "GPS matched route 7",
       "count": 2,
       "latest_date": "2026-03-10",
       "efficiency_change_pct": -0.7,

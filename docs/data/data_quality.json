@@ -1,10 +1,10 @@
 {
-  "generated_at_utc": "2026-06-10T07:04:25.835137+00:00",
+  "generated_at_utc": "2026-06-18T15:24:55.241633+00:00",
   "activities_recent_public": 20,
-  "local_stream_files": 48,
-  "threshold_points": 14,
-  "drift_points": 37,
-  "matched_route_groups": 7,
+  "local_stream_files": 50,
+  "threshold_points": 15,
+  "drift_points": 39,
+  "matched_route_groups": 8,
   "classified_runs_public": 20,
   "note": "Public-safe quality summary only. No activity IDs, GPS, route names or coordinates are exported."
 }

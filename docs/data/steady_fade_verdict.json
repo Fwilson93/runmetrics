@@ -1,6 +1,6 @@
 {
   "label": "strong fade",
-  "recent_mean_efficiency_change_pct": -12.3,
+  "recent_mean_efficiency_change_pct": -9.7,
   "message": "Recent steady runs show strong fade. Treat this as a recovery/consolidation warning unless terrain or HR noise explains it.",
   "plain_english": "This checks whether you get less speed for the same heartbeat in the second half of steady runs. Closer to 0% is better; strongly negative means you faded."
 }

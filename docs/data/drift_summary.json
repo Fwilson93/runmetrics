@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-06-10T07:04:23.227771+00:00",
+  "generated_at_utc": "2026-06-18T15:24:52.340468+00:00",
   "method": "Compares speed-per-heartbeat in first vs second half of moving stream data for runs >=35 min. Negative efficiency_change_pct can indicate HR drift/decoupling, but route, heat, fatigue and sensor quality matter.",
   "items": [
     {
@@ -408,6 +408,28 @@
       "grade_abs_mean": 3.1,
       "confidence": "high",
       "date": "2026-06-09"
+    },
+    {
+      "duration_min": 106.0,
+      "first_half_hr": 164.2,
+      "second_half_hr": 160.3,
+      "hr_rise_bpm": -4.0,
+      "speed_change_pct": 0.2,
+      "efficiency_change_pct": 2.7,
+      "grade_abs_mean": 3.36,
+      "confidence": "high",
+      "date": "2026-06-14"
+    },
+    {
+      "duration_min": 60.0,
+      "first_half_hr": 140.0,
+      "second_half_hr": 142.2,
+      "hr_rise_bpm": 2.2,
+      "speed_change_pct": -5.0,
+      "efficiency_change_pct": -6.5,
+      "grade_abs_mean": 3.2,
+      "confidence": "high",
+      "date": "2026-06-16"
     }
   ]
 }

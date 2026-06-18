@@ -1,5 +1,29 @@
 [
   {
+    "date": "2026-06-16",
+    "sport_type": "Run",
+    "distance_km": 12.092,
+    "moving_time_min": 60.033,
+    "pace_min_per_km": 4.965,
+    "elev_gain_m": 176.4,
+    "avg_hr": 141.1,
+    "max_hr": 159.0,
+    "load_trimp": 84.48,
+    "efficiency_factor": 85.695
+  },
+  {
+    "date": "2026-06-14",
+    "sport_type": "TrailRun",
+    "distance_km": 20.966,
+    "moving_time_min": 104.217,
+    "pace_min_per_km": 4.971,
+    "elev_gain_m": 333.7,
+    "avg_hr": 162.2,
+    "max_hr": 178.0,
+    "load_trimp": 240.258,
+    "efficiency_factor": 129.261
+  },
+  {
     "date": "2026-06-09",
     "sport_type": "Run",
     "distance_km": 10.451,
@@ -214,29 +238,5 @@
     "max_hr": 181.0,
     "load_trimp": 63.216,
     "efficiency_factor": 36.169
-  },
-  {
-    "date": "2026-04-02",
-    "sport_type": "Run",
-    "distance_km": 12.131,
-    "moving_time_min": 57.967,
-    "pace_min_per_km": 4.778,
-    "elev_gain_m": 206.5,
-    "avg_hr": 155.9,
-    "max_hr": 174.0,
-    "load_trimp": 115.832,
-    "efficiency_factor": 77.813
-  },
-  {
-    "date": "2026-03-31",
-    "sport_type": "Run",
-    "distance_km": 8.139,
-    "moving_time_min": 40.333,
-    "pace_min_per_km": 4.956,
-    "elev_gain_m": 113.0,
-    "avg_hr": 145.8,
-    "max_hr": 163.0,
-    "load_trimp": 63.602,
-    "efficiency_factor": 55.823
   }
 ]
